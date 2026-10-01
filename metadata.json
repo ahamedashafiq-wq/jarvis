@@ -1,0 +1,6 @@
+{
+  "name": "JARVIS Zoro",
+  "description": "JARVIS Zoro Edition - Three Blades. One Intelligence. Personal AI command center powered by Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
