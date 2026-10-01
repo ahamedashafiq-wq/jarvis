@@ -51,8 +51,8 @@ class GeminiService {
     private var activeCall: Call? = null
 
     private val apiKey: String
-        get() = BuildConfig.GEMINI_API_KEY.let {
-            if (it.isNullOrBlank() || it == "MY_GEMINI_API_KEY") "" else it
+        get() = BuildConfig.GEMINI_API_KEY.let { key: String? ->
+            if (key.isNullOrBlank() || key == "MY_GEMINI_API_KEY") "" else key
         }
 
     val isLiveAiAvailable: Boolean

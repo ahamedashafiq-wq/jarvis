@@ -17,6 +17,7 @@ data class UserAccountEntity(
     val email: String,
     val passwordHash: String,
     val displayName: String,
+    val role: String = "OPERATOR",
     val createdAt: Long = System.currentTimeMillis()
 )
 
