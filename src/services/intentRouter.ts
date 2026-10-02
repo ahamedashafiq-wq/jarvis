@@ -44,7 +44,19 @@ export const ALLOWED_NAVIGATION_ROUTES: Record<string, RoutePath> = {
   task: '/tasks',
   todo: '/tasks',
   focus: '/focus',
-  commands: '/commands',
+  commands: '/command',
+  command: '/command',
+  'command center': '/command',
+  'neural command': '/command',
+  'command surface': '/command',
+  os: '/os',
+  'jarvis os': '/os',
+  workspace: '/os',
+  workspaces: '/os',
+  desktop: '/os',
+  notifications: '/notifications',
+  'notification center': '/notifications',
+  alerts: '/notifications',
   terminal: '/commands',
   analytics: '/analytics',
   logs: '/logs',
@@ -1584,6 +1596,27 @@ export async function executeIntent(
         };
 
         setLocalStore(`tasks_${userId}`, [newTask, ...existingTasks]);
+        
+        // Strict Execution Verification (Section 9)
+        const checkVerify = getLocalStore<Task[]>(`tasks_${userId}`, []);
+        const verified = checkVerify.some((t) => t.id === newTask.id);
+        if (!verified) {
+          const execTime = Math.round(performance.now() - startTime);
+          const failMsg = 'ACTION COULD NOT BE VERIFIED';
+          commandLog = {
+            ...commandLog,
+            status: 'FAILED',
+            result: 'Task creation could not be verified in the persistent database.',
+            execution_time: execTime,
+          };
+          recordCommandLog(userId, commandLog);
+          return {
+            success: false,
+            message: failMsg,
+            commandLog,
+          };
+        }
+
         realtimeService.broadcast('TASK_CREATED', newTask);
         const execTime = Math.round(performance.now() - startTime);
         const resultMsg = `Target identified. The task '${newTask.title}' [${newTask.priority}] has been registered in Blade 02.`;

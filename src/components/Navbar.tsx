@@ -9,14 +9,15 @@ import {
   X,
   Check,
   CheckCheck,
-  Wifi,
-  WifiOff,
+  Command,
   Database,
   Terminal,
   Sparkles,
   AlertTriangle,
   Clock,
   Mic,
+  Sliders,
+  Monitor,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { RoutePath, NotificationItem } from '../types';
@@ -26,9 +27,17 @@ interface NavbarProps {
   onNavigate: (path: RoutePath) => void;
   currentPath: RoutePath;
   onOpenVoiceHUD?: () => void;
+  onOpenCommandPalette?: () => void;
+  onOpenSystemOverlay?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath, onOpenVoiceHUD }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onNavigate,
+  currentPath,
+  onOpenVoiceHUD,
+  onOpenCommandPalette,
+  onOpenSystemOverlay,
+}) => {
   const {
     currentSession,
     profile,
@@ -121,22 +130,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath, onOpenV
 
   return (
     <header className="h-14 border-b border-[#16281F] bg-[#0A100D]/90 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between sticky top-0 z-50">
-      {/* Brand & Tagline */}
+      {/* Brand & Tagline with Original Three Blades Logo */}
       <div
         className="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink-0"
-        onClick={() => onNavigate('/dashboard')}
+        onClick={() => onNavigate('/command')}
       >
-        <div className="w-8 h-8 rounded-lg bg-[#00D084]/15 border border-[#00D084] flex items-center justify-center overflow-hidden">
-          <img
-            src="/jarvis-zoro.jpg"
-            alt="Zoro"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-          <Shield className="w-4 h-4 text-[#19F59A] shrink-0" />
+        {/* Original Three Blade Motif */}
+        <div className="w-8 h-8 rounded-lg bg-[#050706] border border-[#00D084] flex items-center justify-center gap-0.5 shadow-[0_0_10px_rgba(0,208,132,0.15)]">
+          <div className="w-1 h-4 bg-[#00D084] -skew-x-12 rounded-xs shadow-[0_0_4px_#00D084]" />
+          <div className="w-1 h-5 bg-[#38E1FF] -skew-x-12 rounded-xs shadow-[0_0_4px_#38E1FF]" />
+          <div className="w-1 h-4 bg-[#FFB000] -skew-x-12 rounded-xs shadow-[0_0_4px_#FFB000]" />
         </div>
+
         <div>
           <div className="flex items-center gap-1.5">
             <span className="font-extrabold text-sm tracking-wider text-[#F5F7F6]">JARVIS</span>
@@ -150,9 +155,38 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath, onOpenV
         </div>
       </div>
 
-      {/* Telemetry and User Controls */}
+      {/* Telemetry and Controls */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Realtime Live Connection Pill (Full desktop & compact mobile) */}
+        {/* Toggle JARVIS OS Workspace */}
+        <button
+          onClick={() => onNavigate(currentPath === '/os' || currentPath === '/workspace' ? '/command' : '/os')}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all shadow-sm ${
+            currentPath === '/os' || currentPath === '/workspace'
+              ? 'bg-[#121C17] border-[#38E1FF] text-[#38E1FF] shadow-[0_0_10px_rgba(56,225,255,0.2)] font-bold'
+              : 'border-[#16281F] bg-[#050706] text-[#8B9992] hover:text-[#38E1FF] hover:border-[#38E1FF]/40'
+          }`}
+          title="Toggle JARVIS OS Workspace"
+        >
+          <Monitor className="w-3.5 h-3.5 text-[#38E1FF]" />
+          <span className="hidden sm:inline text-[11px]">
+            {currentPath === '/os' || currentPath === '/workspace' ? 'EXIT OS' : 'JARVIS OS'}
+          </span>
+        </button>
+
+        {/* Command Palette Trigger Button (Ctrl + K) */}
+        <button
+          onClick={onOpenCommandPalette}
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#16281F] bg-[#050706] hover:border-[#00D084]/50 text-xs font-mono text-[#8B9992] hover:text-[#19F59A] transition-colors shadow-sm"
+          title="Open Command Palette (Ctrl + K)"
+        >
+          <Command className="w-3.5 h-3.5 text-[#19F59A]" />
+          <span className="hidden sm:inline text-[11px]">PALETTE</span>
+          <kbd className="hidden lg:inline text-[9px] px-1 rounded bg-[#121C17] border border-[#16281F]">
+            Ctrl+K
+          </kbd>
+        </button>
+
+        {/* Realtime Live Connection Pill */}
         <div
           onClick={reconnect}
           className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#050706] border border-[#16281F] text-[10px] font-mono hover:border-[#16281F]/80 transition-colors"
@@ -191,24 +225,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath, onOpenV
           title="Engage Real-Time Voice AI (Ctrl + Space)"
         >
           <Mic className="w-3.5 h-3.5 text-[#19F59A] animate-pulse" />
-          <span className="font-bold hidden sm:inline">VOICE HUD</span>
+          <span className="font-bold hidden sm:inline">VOICE</span>
           <span className="text-[8px] px-1 py-0.2 rounded bg-[#00D084]/15 text-[#19F59A] hidden lg:inline font-mono">
             ^SPACE
           </span>
         </button>
 
-        {/* Telemetry Logs shortcut */}
+        {/* System Command Overlay Trigger */}
         <button
-          onClick={() => onNavigate('/logs')}
-          className={`p-1.5 rounded-lg border text-[10px] font-mono hidden sm:flex items-center gap-1.5 transition-colors ${
-            currentPath === '/logs'
-              ? 'bg-[#121C17] border-[#00D084] text-[#19F59A]'
-              : 'border-[#16281F] bg-[#050706] text-[#8B9992] hover:text-[#19F59A] hover:border-[#00D084]/40'
-          }`}
-          title="System Telemetry & Real-Time Audit Logs"
+          onClick={onOpenSystemOverlay}
+          className="p-1.5 rounded-lg border border-[#16281F] bg-[#050706] text-[#8B9992] hover:text-[#38E1FF] hover:border-[#38E1FF]/40 transition-colors hidden sm:flex"
+          title="System Command Overlay"
         >
-          <Activity className="w-3.5 h-3.5" />
-          <span>LOGS</span>
+          <Sliders className="w-4 h-4" />
         </button>
 
         {/* Notifications Icon with live dropdown */}
@@ -232,25 +261,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath, onOpenV
                 <div className="flex items-center gap-1.5">
                   <Bell className="w-3.5 h-3.5 text-[#19F59A]" />
                   <span className="font-bold text-[#F5F7F6] text-[11px] tracking-wider">
-                    LIVE NOTIFICATION CENTER
+                    LIVE NOTIFICATIONS
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setShowNotifications(false);
+                      onNavigate('/notifications');
+                    }}
+                    className="text-[10px] text-[#38E1FF] hover:underline"
+                  >
+                    VIEW ALL
+                  </button>
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllNotificationsRead}
                       className="text-[10px] text-[#19F59A] hover:underline flex items-center gap-1"
                     >
                       <CheckCheck className="w-3 h-3" />
-                      <span>MARK ALL READ</span>
-                    </button>
-                  )}
-                  {notifications.length > 0 && (
-                    <button
-                      onClick={clearNotifications}
-                      className="text-[10px] text-[#8B9992] hover:text-[#FF3B30] transition-colors"
-                    >
-                      CLEAR
+                      <span>READ ALL</span>
                     </button>
                   )}
                 </div>

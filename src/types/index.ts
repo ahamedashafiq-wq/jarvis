@@ -20,6 +20,10 @@ export type RoutePath =
   | '/tasks'
   | '/focus'
   | '/commands'
+  | '/command'
+  | '/notifications'
+  | '/os'
+  | '/workspace'
   | '/analytics'
   | '/logs'
   | '/settings'
@@ -111,6 +115,7 @@ export type ToolPermission =
   | 'notification.write'
   | 'analytics.read'
   | 'system.read'
+  | 'system.write'
   | 'automation.read'
   | 'automation.write'
   | 'vision.read'
@@ -539,9 +544,14 @@ export type RealtimeEventType =
   | 'OBJECTIVE_DELETED'
   | 'MISSION_ACTIVITY_CREATED'
   | 'AGENT_STATUS_UPDATED'
+  | 'AGENT_STARTED'
   | 'AGENT_STEP_EXECUTED'
   | 'AGENT_PLAN_CREATED'
   | 'AGENT_COMPLETED'
+  | 'COMMAND_STARTED'
+  | 'COMMAND_COMPLETED'
+  | 'COMMAND_FAILED'
+  | 'WORKSPACE_CHANGED'
   | 'AUTOMATION_CREATED'
   | 'AUTOMATION_UPDATED'
   | 'AUTOMATION_PAUSED'
@@ -551,6 +561,8 @@ export type RealtimeEventType =
   | 'AUTOMATION_COMPLETED'
   | 'AUTOMATION_FAILED'
   | 'AUTOMATION_SKIPPED'
+  | 'VISION_STARTED'
+  | 'VISION_COMPLETED'
   | 'VISION_UPLOAD_STARTED'
   | 'VISION_ANALYSIS_STARTED'
   | 'VISION_ANALYSIS_COMPLETED'
@@ -1105,4 +1117,219 @@ export interface PredictiveProvider {
   predict(userId: string, signals: PredictiveSignal[]): Promise<IntelligenceInsight[]>;
   explain(insight: IntelligenceInsight): string;
 }
+
+// ----------------------------------------------------
+// PHASE 13: JARVIS NEURAL COMMAND SURFACE
+// ----------------------------------------------------
+
+export type CommandSurfaceState =
+  | 'IDLE'
+  | 'LISTENING'
+  | 'THINKING'
+  | 'PLANNING'
+  | 'WAITING_APPROVAL'
+  | 'EXECUTING'
+  | 'VERIFYING'
+  | 'COMPLETE'
+  | 'ERROR'
+  | 'CANCELLED';
+
+export type CommandResponseMode = 'QUICK' | 'DETAILED' | 'ACTION' | 'ANALYSIS' | 'ERROR';
+
+export type SearchResultType =
+  | 'MISSION'
+  | 'OBJECTIVE'
+  | 'TASK'
+  | 'MEMORY'
+  | 'DECISION'
+  | 'CONVERSATION'
+  | 'VISION'
+  | 'AUTOMATION'
+  | 'AGENT'
+  | 'INSIGHT';
+
+export interface GlobalSearchResult {
+  id: string;
+  type: SearchResultType;
+  title: string;
+  description: string;
+  relevance: number; // 0 - 100
+  date: number;
+  route: RoutePath;
+  metadata?: Record<string, any>;
+}
+
+export interface PinnedFavoriteCommand {
+  id: string;
+  label: string;
+  command: string;
+  icon?: string;
+  description?: string;
+}
+
+export interface CommandAlias {
+  id: string;
+  alias: string; // e.g. "launch mode"
+  description: string;
+  actions: {
+    type: 'NAVIGATE' | 'FOCUS_START' | 'RUN_BRIEFING' | 'SEARCH';
+    param?: any;
+  }[];
+}
+
+export interface ActionPreviewData {
+  id: string;
+  actionType:
+    | 'TASK_CREATE'
+    | 'TASK_COMPLETE'
+    | 'MISSION_CREATE'
+    | 'MISSION_COMPLETE'
+    | 'AUTOMATION_CREATE'
+    | 'MEMORY_DELETE'
+    | 'DECISION_UPDATE'
+    | 'AGENT_PLAN';
+  title: string;
+  description?: string;
+  priority?: string;
+  missionName?: string;
+  missionId?: string;
+  details: { label: string; value: string }[];
+  riskLevel: RiskLevel;
+  rawPayload: any;
+}
+
+export interface CommandResultData {
+  id: string;
+  timestamp: number;
+  command: string;
+  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  responseMode: CommandResponseMode;
+  headline: string;
+  summary: string;
+  actionTaken?: {
+    type: string;
+    itemTitle: string;
+    itemCategory?: string;
+    linkRoute?: RoutePath;
+    linkLabel?: string;
+  };
+  details?: string[];
+  executionTimeMs?: number;
+}
+
+// ----------------------------------------------------
+// PHASE 14: JARVIS OS 1.0 WORKSPACE TYPES
+// ----------------------------------------------------
+
+export type WindowState =
+  | 'NORMAL'
+  | 'MINIMIZED'
+  | 'MAXIMIZED'
+  | 'FULLSCREEN'
+  | 'PINNED'
+  | 'CLOSED';
+
+export type WindowModuleType =
+  | 'COMMAND'
+  | 'MISSIONS'
+  | 'TASKS'
+  | 'MEMORY'
+  | 'KNOWLEDGE_GRAPH'
+  | 'DECISIONS'
+  | 'VISION'
+  | 'AGENTS'
+  | 'AGENT_COUNCIL'
+  | 'AUTOMATION'
+  | 'INTELLIGENCE'
+  | 'ANALYTICS'
+  | 'NOTIFICATIONS'
+  | 'FOCUS'
+  | 'CHAT'
+  | 'VOICE'
+  | 'LOGS'
+  | 'SETTINGS'
+  | 'PROFILE';
+
+export interface WindowPosition {
+  x: number;
+  y: number;
+}
+
+export interface WindowSize {
+  width: number;
+  height: number;
+}
+
+export interface OSWindow {
+  id: string;
+  type: WindowModuleType;
+  title: string;
+  position: WindowPosition;
+  size: WindowSize;
+  zIndex: number;
+  state: WindowState;
+  pinned: boolean;
+  workspaceId: string;
+  initialTab?: string;
+  customData?: any;
+}
+
+export type OSLayoutType = 'FREE' | 'SPLIT_TWO' | 'SPLIT_THREE' | 'GRID' | 'FOCUS';
+
+export type OSViewMode = 'DESKTOP' | 'FOCUS' | 'PRESENTATION' | 'DEMO';
+
+export interface OSWorkspace {
+  id: string;
+  name: string;
+  icon?: string;
+  presetType?: 'COMMAND' | 'DEVELOPMENT' | 'RESEARCH' | 'MISSION_CONTROL' | 'CUSTOM';
+  associatedProjectId?: string;
+  associatedProjectName?: string;
+  windows: OSWindow[];
+  layoutType: OSLayoutType;
+  isCustom?: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface WorkspaceSnapshot {
+  id: string;
+  name: string;
+  userId: string;
+  workspace: OSWorkspace;
+  savedAt: number;
+}
+
+export type JARVISCoreIndicatorState =
+  | 'READY'
+  | 'LISTENING'
+  | 'PROCESSING'
+  | 'PLANNING'
+  | 'EXECUTING'
+  | 'VERIFYING'
+  | 'ERROR';
+
+export type OSEventType =
+  | 'WINDOW_OPEN'
+  | 'WINDOW_CLOSE'
+  | 'WINDOW_FOCUS'
+  | 'WINDOW_MINIMIZE'
+  | 'WINDOW_MAXIMIZE'
+  | 'WINDOW_PIN'
+  | 'WORKSPACE_SWITCH'
+  | 'WORKSPACE_CREATED'
+  | 'WORKSPACE_DELETED'
+  | 'LAYOUT_APPLIED'
+  | 'PROJECT_CONTEXT_CHANGED'
+  | 'VIEW_MODE_CHANGED';
+
+export interface WindowLayoutProposal {
+  workspaceName: string;
+  modules: WindowModuleType[];
+  layoutType: OSLayoutType;
+  description: string;
+  associatedProjectName?: string;
+}
+
+
 

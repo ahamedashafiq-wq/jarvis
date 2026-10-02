@@ -6,6 +6,27 @@ import { realtimeService } from '../realtime';
 import { Task, Memory, Mission, MissionObjective } from '../../types';
 import { AutomationService } from '../automation';
 import { VisionService } from '../vision';
+import { IntelligenceService } from '../intelligence';
+import { WorkspaceManager } from '../os/workspaceManager';
+import { GlobalSearchService } from '../commandCenter/search';
+
+export type ToolCategory =
+  | 'MISSIONS'
+  | 'TASKS'
+  | 'MEMORY'
+  | 'VISION'
+  | 'AUTOMATION'
+  | 'INTELLIGENCE'
+  | 'NAVIGATION'
+  | 'WORKSPACE'
+  | 'NOTIFICATIONS'
+  | 'SEARCH'
+  | 'MISSION'
+  | 'OBJECTIVE'
+  | 'TASK'
+  | 'FOCUS'
+  | 'SYSTEM'
+  | 'ANALYTICS';
 
 export interface ToolDefinition {
   name: string;
@@ -13,7 +34,7 @@ export interface ToolDefinition {
   permission: ToolPermission;
   risk: RiskLevel;
   requiresConfirmation: boolean;
-  category: 'MISSION' | 'OBJECTIVE' | 'TASK' | 'MEMORY' | 'FOCUS' | 'SYSTEM' | 'ANALYTICS' | 'AUTOMATION' | 'VISION';
+  category: ToolCategory;
   validateParams: (params: Record<string, any>) => { valid: boolean; error?: string };
   handler: (params: Record<string, any>, userId: string) => Promise<{ success: boolean; data?: any; message: string }>;
   verify: (params: Record<string, any>, resultData: any, userId: string) => Promise<{ verified: boolean; detail: string }>;
@@ -977,6 +998,191 @@ class ToolRegistryService {
         };
       },
       verify: async () => ({ verified: true, detail: 'Chart telemetry verified.' }),
+    });
+
+    // ----------------------------------------------------
+    // 10. PREDICTIVE INTELLIGENCE TOOLS (Section 7 & 15)
+    // ----------------------------------------------------
+    this.register({
+      name: 'intelligence.get_insights',
+      description: 'Retrieve real predictive insights, risk warnings, and bottleneck signals.',
+      permission: 'analytics.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'INTELLIGENCE',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const insights = IntelligenceService.getInsights(userId);
+        return {
+          success: true,
+          data: insights,
+          message: `Retrieved ${insights.length} active predictive insights.`,
+        };
+      },
+      verify: async (params, resultData) => ({
+        verified: Array.isArray(resultData),
+        detail: 'Predictive insights verified.',
+      }),
+    });
+
+    this.register({
+      name: 'intelligence.get_signals',
+      description: 'Detect real-time tactical signals, activity trends, and overdue warnings.',
+      permission: 'analytics.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'INTELLIGENCE',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const signals = IntelligenceService.detectLiveSignals(userId);
+        return {
+          success: true,
+          data: signals,
+          message: `Detected ${signals.length} live telemetry signals.`,
+        };
+      },
+      verify: async (params, resultData) => ({
+        verified: Array.isArray(resultData),
+        detail: 'Live signals telemetry verified.',
+      }),
+    });
+
+    // ----------------------------------------------------
+    // 11. NAVIGATION TOOLS (Section 7)
+    // ----------------------------------------------------
+    this.register({
+      name: 'navigation.go',
+      description: 'Navigate to an authorized JARVIS OS module route.',
+      permission: 'system.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'NAVIGATION',
+      validateParams: (params) => {
+        if (!params.route || typeof params.route !== 'string') return { valid: false, error: 'Route path required' };
+        return { valid: true };
+      },
+      handler: async (params) => {
+        return {
+          success: true,
+          data: { route: params.route },
+          message: `Routing directive dispatched: ${params.route}`,
+        };
+      },
+      verify: async (params, resultData) => ({
+        verified: Boolean(resultData?.route),
+        detail: 'Navigation destination verified.',
+      }),
+    });
+
+    // ----------------------------------------------------
+    // 12. WORKSPACE TOOLS (Section 7 & 25)
+    // ----------------------------------------------------
+    this.register({
+      name: 'workspace.list',
+      description: 'List all configured JARVIS OS workspaces and window layouts.',
+      permission: 'system.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'WORKSPACE',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const list = WorkspaceManager.getWorkspaces(userId);
+        return {
+          success: true,
+          data: list,
+          message: `Loaded ${list.length} workspace environments.`,
+        };
+      },
+      verify: async (params, resultData) => ({
+        verified: Array.isArray(resultData),
+        detail: 'Workspace catalog verified.',
+      }),
+    });
+
+    this.register({
+      name: 'workspace.switch',
+      description: 'Switch active JARVIS OS workspace preset.',
+      permission: 'system.write',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'WORKSPACE',
+      validateParams: (params) => {
+        if (!params.workspaceId && !params.name) return { valid: false, error: 'Workspace id or name required' };
+        return { valid: true };
+      },
+      handler: async (params, userId) => {
+        const list = WorkspaceManager.getWorkspaces(userId);
+        const target = params.workspaceId
+          ? list.find((w) => w.id === params.workspaceId)
+          : list.find((w) => w.name.toLowerCase() === String(params.name).toLowerCase());
+        if (!target) return { success: false, message: 'Workspace preset not located.' };
+        WorkspaceManager.setActiveWorkspaceId(userId, target.id);
+        return {
+          success: true,
+          data: target,
+          message: `Switched to workspace: "${target.name}".`,
+        };
+      },
+      verify: async (params, resultData, userId) => {
+        const active = WorkspaceManager.getActiveWorkspace(userId);
+        return {
+          verified: active?.id === resultData?.id,
+          detail: 'Active workspace switch verified in store.',
+        };
+      },
+    });
+
+    // ----------------------------------------------------
+    // 13. NOTIFICATION TOOLS (Section 7)
+    // ----------------------------------------------------
+    this.register({
+      name: 'notifications.list',
+      description: 'Get current system and tactical notifications.',
+      permission: 'system.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'NOTIFICATIONS',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const notifs = getLocalStore<any[]>(`notifications_${userId}`, []);
+        return {
+          success: true,
+          data: notifs,
+          message: `Found ${notifs.length} total notifications.`,
+        };
+      },
+      verify: async (params, resultData) => ({
+        verified: Array.isArray(resultData),
+        detail: 'Notifications verified.',
+      }),
+    });
+
+    // ----------------------------------------------------
+    // 14. GLOBAL SEARCH TOOL (Section 7)
+    // ----------------------------------------------------
+    this.register({
+      name: 'search.global',
+      description: 'Execute unified search across missions, objectives, tasks, memories, and vision sessions.',
+      permission: 'system.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'SEARCH',
+      validateParams: (params) => {
+        if (!params.query || typeof params.query !== 'string') return { valid: false, error: 'Search query required' };
+        return { valid: true };
+      },
+      handler: async (params, userId) => {
+        const results = GlobalSearchService.searchAll(userId, params.query);
+        return {
+          success: true,
+          data: results,
+          message: `Discovered ${results.length} items matching "${params.query}".`,
+        };
+      },
+      verify: async (params, resultData) => ({
+        verified: Array.isArray(resultData),
+        detail: 'Global search execution verified.',
+      }),
     });
   }
 

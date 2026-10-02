@@ -636,10 +636,18 @@ SECURITY RULES:
     return raw.filter((s) => s.user_id === userId).sort((a, b) => b.created_at - a.created_at);
   }
 
+  public static getSessions(userId: string): VisionSession[] {
+    return this.getVisionSessions(userId);
+  }
+
   public static saveVisionSession(userId: string, session: VisionSession) {
     const existing = this.getVisionSessions(userId);
     const updated = [session, ...existing.filter((s) => s.id !== session.id)].slice(0, 50);
     setLocalStore(`vision_sessions_${userId}`, updated);
+  }
+
+  public static saveSession(userId: string, session: VisionSession) {
+    return this.saveVisionSession(userId, session);
   }
 
   public static deleteVisionSession(userId: string, sessionId: string): boolean {

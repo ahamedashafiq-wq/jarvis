@@ -365,6 +365,10 @@ class RealtimeService {
     };
   }
 
+  public on(eventType: RealtimeEventType | '*', callback: EventListener): () => void {
+    return this.subscribe(eventType, callback);
+  }
+
   public onStatusChange(callback: StatusListener): () => void {
     this.statusListeners.add(callback);
     callback(this.connectionStatus);
