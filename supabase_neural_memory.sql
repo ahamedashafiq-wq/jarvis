@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS public.knowledge_entities (
             'VISION_ANALYSIS',
             'GOAL',
             'DEADLINE',
+            'DECISION',
+            'PREFERENCE',
             'OTHER'
         )
     ),
@@ -74,3 +76,33 @@ CREATE POLICY "Users can only access their own knowledge relationships"
     FOR ALL
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
+
+-- 3. Structured Decision Memory Table
+CREATE TABLE IF NOT EXISTS public.knowledge_decisions (
+    id TEXT PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    decision TEXT NOT NULL,
+    context TEXT,
+    project_name TEXT,
+    project_entity_id TEXT,
+    source TEXT NOT NULL DEFAULT 'USER_SAVED',
+    quality TEXT NOT NULL DEFAULT 'EXPLICITLY_SAVED',
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUPERSEDED', 'REVERTED')),
+    superseded_by TEXT,
+    supersedes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_decisions_user ON public.knowledge_decisions(user_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_decisions_project ON public.knowledge_decisions(project_name);
+CREATE INDEX IF NOT EXISTS idx_knowledge_decisions_status ON public.knowledge_decisions(status);
+
+ALTER TABLE public.knowledge_decisions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can only access their own decisions"
+    ON public.knowledge_decisions
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+

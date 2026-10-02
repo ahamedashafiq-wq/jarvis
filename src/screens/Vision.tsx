@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { VisionService } from '../services/vision';
 import { MissionService } from '../services/mission';
+import { NeuralMemoryService } from '../services/neuralMemory';
 import { speechService } from '../services/speech';
 import { realtimeService } from '../services/realtime';
 import { useToast } from '../components/Toast';
@@ -335,7 +336,14 @@ export const VisionScreen: React.FC<VisionProps> = ({ onNavigate }) => {
 
     const saved = VisionService.saveAnalysisToMemory(userId, dummySession, 'Visual insight archived via Vision Core.');
     if (saved) {
-      showToast('ARCHIVED TO MEMORY', 'Visual observations committed to Blade 03 (Memory Bank).', 'SUCCESS');
+      const activeMission = activeMissions.find((m) => m.id === selectedMissionId);
+      NeuralMemoryService.autoLinkVision(
+        userId,
+        dummySession.id,
+        selectedMeta.filename,
+        activeMission?.title
+      );
+      showToast('ARCHIVED TO KNOWLEDGE', 'Visual observations committed to Neural Memory & Knowledge Graph.', 'SUCCESS');
       createNotification('MEMORY STORED', `Archived vision analysis: "${analysisResult.summary}"`, 'MEMORY');
     } else {
       showToast('ERROR', 'Failed to archive memory.', 'ERROR');
@@ -707,10 +715,10 @@ export const VisionScreen: React.FC<VisionProps> = ({ onNavigate }) => {
                   <button
                     onClick={handleSaveToMemory}
                     className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#121C17] border border-[#16281F] text-[#19F59A] hover:border-[#19F59A]/40 text-[10px]"
-                    title="Archive to Blade 03 Memory Bank"
+                    title="Archive to Neural Memory Bank & Knowledge Graph"
                   >
                     <Database className="w-3 h-3" />
-                    <span>SAVE TO MEMORY</span>
+                    <span>SAVE TO KNOWLEDGE</span>
                   </button>
                 </div>
               </div>

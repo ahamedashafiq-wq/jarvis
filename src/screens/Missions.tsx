@@ -21,6 +21,7 @@ import {
 import { MissionService } from '../services/mission';
 import { MissionUniverse } from '../components/MissionUniverse';
 import { PlanWithJarvisModal } from '../components/PlanWithJarvisModal';
+import { NeuralMemoryService } from '../services/neuralMemory';
 import { useToast } from '../components/Toast';
 import {
   Target,
@@ -49,6 +50,9 @@ import {
   Circle,
   Check,
   Shield,
+  GitCommit,
+  Compass,
+  Eye,
 } from 'lucide-react';
 
 interface MissionsProps {
@@ -134,7 +138,7 @@ export const Missions: React.FC<MissionsProps> = ({ onNavigate, initialMissionId
   const [taskPriority, setTaskPriority] = useState<Task['priority']>('MEDIUM');
 
   // Detail View Sub-tabs
-  const [activeTab, setActiveTab] = useState<'OBJECTIVES' | 'TASKS' | 'UNIVERSE' | 'TIMELINE' | 'REPLAY'>('OBJECTIVES');
+  const [activeTab, setActiveTab] = useState<'OBJECTIVES' | 'TASKS' | 'UNIVERSE' | 'TIMELINE' | 'REPLAY' | 'MEMORY'>('OBJECTIVES');
   const [expandedObjectives, setExpandedObjectives] = useState<Record<string, boolean>>({});
 
   // Debounce search query
@@ -588,6 +592,7 @@ export const Missions: React.FC<MissionsProps> = ({ onNavigate, initialMissionId
             { id: 'UNIVERSE', label: 'MISSION UNIVERSE (2D)' },
             { id: 'TIMELINE', label: `ACTIVITY TIMELINE (${activities.length})` },
             { id: 'REPLAY', label: 'FOCUS & REPLAY' },
+            { id: 'MEMORY', label: 'NEURAL MEMORY' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -998,6 +1003,120 @@ export const Missions: React.FC<MissionsProps> = ({ onNavigate, initialMissionId
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 6: NEURAL MEMORY (Phase 11 Requirement 30) */}
+        {activeTab === 'MEMORY' && (
+          <div className="space-y-5 font-mono text-xs">
+            {/* Project Knowledge Snapshot */}
+            <div className="p-4 rounded-xl bg-[#0A100D] border border-[#16281F] space-y-3">
+              <div className="flex items-center justify-between border-b border-[#16281F] pb-2">
+                <span className="text-xs font-bold text-[#19F59A] flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#19F59A]" />
+                  PROJECT KNOWLEDGE SNAPSHOT: {selectedMission.title}
+                </span>
+                <button
+                  onClick={() => onNavigate('/memory')}
+                  className="px-2.5 py-1 rounded-lg bg-[#121C17] border border-[#19F59A]/30 text-[#19F59A] hover:bg-[#19F59A]/20 transition-all text-[10px] font-bold flex items-center gap-1"
+                >
+                  <Compass className="w-3 h-3" />
+                  <span>OPEN KNOWLEDGE GRAPH</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                <div className="p-3 rounded-lg bg-[#050706] border border-[#16281F] space-y-1">
+                  <span className="text-[10px] text-[#8B9992] uppercase font-bold">MISSION GOAL:</span>
+                  <div className="text-[#F5F7F6] font-bold">{selectedMission.goal}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-[#050706] border border-[#16281F] space-y-1">
+                  <span className="text-[10px] text-[#8B9992] uppercase font-bold">MISSION STATUS:</span>
+                  <div className="text-[#38E1FF] font-bold">
+                    {selectedMission.status} ({selectedMission.progress}% Complete)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Relevant Architectural Decisions */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#A78BFA] flex items-center gap-1.5">
+                  <GitCommit className="w-4 h-4" />
+                  <span>RELEVANT PROJECT DECISIONS</span>
+                </span>
+              </div>
+
+              {(() => {
+                const decisions = NeuralMemoryService.getDecisions(userId).filter(
+                  (d) => d.status === 'ACTIVE'
+                );
+                if (decisions.length === 0) {
+                  return (
+                    <p className="text-xs text-[#8B9992] italic p-4 rounded-xl bg-[#0A100D] border border-[#16281F]">
+                      No explicit decisions recorded yet. Record architectural decisions via Chat, Voice, or the Memory Deck.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {decisions.map((dec) => (
+                      <div
+                        key={dec.id}
+                        className="p-3.5 rounded-xl bg-[#0A100D] border border-[#A78BFA]/30 space-y-1.5 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[#F5F7F6] text-xs">{dec.decision}</span>
+                          <span className="text-[9px] px-2 py-0.5 rounded bg-[#A78BFA]/20 text-[#A78BFA] font-bold">
+                            {dec.status}
+                          </span>
+                        </div>
+                        {dec.context && (
+                          <p className="text-[11px] text-[#8B9992] font-sans">{dec.context}</p>
+                        )}
+                        <div className="text-[9px] text-[#8B9992] pt-1 flex items-center gap-3">
+                          <span>Source: {dec.source}</span>
+                          <span>•</span>
+                          <span>Quality: {dec.quality}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Saved Vision Analyses */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-[#38E1FF] flex items-center gap-1.5">
+                <Eye className="w-4 h-4" />
+                <span>SAVED VISION TELEMETRY</span>
+              </span>
+              {(() => {
+                const visions = NeuralMemoryService.getEntities(userId, 'VISION_ANALYSIS');
+                if (visions.length === 0) {
+                  return (
+                    <p className="text-xs text-[#8B9992] italic p-4 rounded-xl bg-[#0A100D] border border-[#16281F]">
+                      No visual inspection artifacts linked to this mission yet.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {visions.map((v) => (
+                      <div
+                        key={v.id}
+                        className="p-3 rounded-xl bg-[#0A100D] border border-[#16281F] space-y-1"
+                      >
+                        <span className="font-bold text-xs text-[#F5F7F6] truncate block">{v.name}</span>
+                        <p className="text-[10px] text-[#8B9992] font-sans line-clamp-2">{v.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         )}
 

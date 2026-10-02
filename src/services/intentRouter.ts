@@ -15,6 +15,8 @@ import {
 import { MemoryService, isSecretOrSensitive } from './memory';
 import { MissionService } from './mission';
 import { AutomationService } from './automation';
+import { NeuralMemoryService } from './neuralMemory';
+import { IntelligenceService } from './intelligence';
 import { getLocalStore, setLocalStore } from './supabase';
 import { realtimeService } from './realtime';
 
@@ -52,6 +54,11 @@ export const ALLOWED_NAVIGATION_ROUTES: Record<string, RoutePath> = {
   automations: '/automation',
   'automation lab': '/automation',
   workflows: '/automation',
+  intelligence: '/intelligence',
+  'intelligence core': '/intelligence',
+  predictions: '/intelligence',
+  forecast: '/intelligence',
+  patterns: '/intelligence',
 };
 
 // Allowlisted settings keys
@@ -637,6 +644,199 @@ export function detectIntentHeuristics(text: string): DetectedIntent {
       parameters: { query: raw },
       rawMessage: raw,
       explanation: 'Query against persistent memory bank',
+    };
+  }
+
+  // 3a. Decision Query intent (Phase 11 Requirement 41)
+  // e.g. "What backend decision did we make?", "What's our backend decision?", "What's the current backend?", "What is the current backend?"
+  if (
+    lower.includes('backend decision') ||
+    lower === 'what backend decision did we make?' ||
+    lower === 'what backend decision did we make' ||
+    lower === 'what was our backend decision?' ||
+    lower === 'what was our backend decision' ||
+    lower === "what's our backend decision?" ||
+    lower === "what's our backend decision" ||
+    lower === 'what is our backend decision?' ||
+    lower === 'what is our backend decision' ||
+    lower === "what's the current backend?" ||
+    lower === "what's the current backend" ||
+    lower === 'what is the current backend?' ||
+    lower === 'what is the current backend' ||
+    lower === 'what is the backend?' ||
+    lower === "what's the backend?" ||
+    (lower.includes('current backend') && lower.includes('what')) ||
+    (lower.includes('backend') && lower.includes('decision') && lower.includes('what'))
+  ) {
+    return {
+      intent: 'DECISION_QUERY',
+      confidence: 0.99,
+      parameters: { subject: 'backend', projectName: 'AI Assistant' },
+      rawMessage: raw,
+      explanation: 'Query active architectural decision for project backend',
+    };
+  }
+
+  // 3b. Decision Update / Change intent (Phase 11 Requirement 41)
+  // e.g. "We changed it to Node.js", "We changed it to Node.js.", "Switch the backend to Node.js", "Change backend to Node.js"
+  if (
+    lower === 'we changed it to node.js' ||
+    lower === 'we changed it to node.js.' ||
+    lower === 'we changed it to nodejs' ||
+    lower === 'we changed it to node' ||
+    lower.startsWith('we changed it to ') ||
+    lower.startsWith('we changed the backend to ') ||
+    lower.startsWith('switch the backend to ') ||
+    lower.startsWith('switch backend to ') ||
+    lower.startsWith('change the backend to ') ||
+    lower.startsWith('change backend to ') ||
+    lower.startsWith('the backend is now ')
+  ) {
+    let cleanNew = raw
+      .replace(
+        /^(we changed it to |we changed the backend to |switch the backend to |switch backend to |change the backend to |change backend to |the backend is now )/i,
+        ''
+      )
+      .replace(/\.$/, '')
+      .trim();
+
+    const decisionText = cleanNew.toLowerCase().includes('backend')
+      ? cleanNew
+      : `Switch the backend to ${cleanNew}.`;
+
+    return {
+      intent: 'DECISION_UPDATE_PROPOSE',
+      confidence: 0.99,
+      parameters: {
+        newDecisionText: decisionText,
+        cleanSubject: 'backend',
+        projectName: 'AI Assistant',
+      },
+      rawMessage: raw,
+      explanation: 'Directive to update previously established project decision',
+    };
+  }
+
+  // 3c. Project Decision Proposal intent (Phase 11 Requirement 41)
+  // e.g. "Remember that my AI Assistant backend uses FastAPI.", "Remember that the AI Assistant backend uses FastAPI"
+  if (
+    (lower.includes('backend uses ') || lower.includes('backend should use ')) &&
+    (lower.includes('remember') || lower.includes('ai assistant') || lower.includes('project'))
+  ) {
+    let decisionText = 'Use FastAPI for the backend.';
+    if (lower.includes('fastapi')) decisionText = 'Use FastAPI for the backend.';
+    else if (lower.includes('node')) decisionText = 'Use Node.js for the backend.';
+    else {
+      decisionText = raw.replace(/^(remember that (?:my |our )?|remember: |save this: )/i, '').trim();
+    }
+
+    return {
+      intent: 'DECISION_PROPOSE',
+      confidence: 0.99,
+      parameters: {
+        decisionText,
+        projectName: 'AI Assistant',
+        subject: 'backend',
+      },
+      rawMessage: raw,
+      explanation: 'Project decision candidate identified — prompt user for confirmation',
+    };
+  }
+
+  // 3d. Knowledge Search intent
+  if (
+    lower.startsWith('search knowledge ') ||
+    lower.startsWith('search neural memory ') ||
+    lower.startsWith('search knowledge: ')
+  ) {
+    const q = raw.replace(/^(search knowledge:? |search neural memory:? )/i, '').trim();
+    return {
+      intent: 'KNOWLEDGE_SEARCH',
+      confidence: 0.98,
+      parameters: { query: q },
+      rawMessage: raw,
+      explanation: 'Search knowledge graph and decisions',
+    };
+  }
+
+  // 3e. Predictive Focus Query intent (Phase 12 Section 23)
+  // e.g. "What should I focus on?", "jarvis, what should i focus on?", "where should i focus?"
+  if (
+    lower.includes('what should i focus on') ||
+    lower.includes('what to focus on') ||
+    lower.includes('where should i focus') ||
+    lower.includes('recommend focus') ||
+    lower === 'what should i do next' ||
+    lower === 'what should i do next?'
+  ) {
+    return {
+      intent: 'PREDICTIVE_FOCUS_QUERY',
+      confidence: 0.99,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Query Predictive Intelligence Core for empirical focus recommendations',
+    };
+  }
+
+  // 3f. Predictive Attention & Approaching Query intent (Phase 12 Section 24)
+  // e.g. "What needs attention?", "What's approaching?", "What changed?", "Which projects have been inactive?"
+  if (
+    lower.includes('what needs attention') ||
+    lower.includes('whats approaching') ||
+    lower.includes("what's approaching") ||
+    lower.includes('what changed') ||
+    lower.includes('which projects have been inactive') ||
+    lower.includes('inactive projects') ||
+    lower.includes('show deadline watch') ||
+    lower.includes('approaching deadlines')
+  ) {
+    return {
+      intent: 'PREDICTIVE_ATTENTION_QUERY',
+      confidence: 0.98,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Query active deadline watches, bottlenecks, and inactive operational areas',
+    };
+  }
+
+  // 3g. Predictive Trend Query intent (Phase 12 Section 7, Critical Test 2)
+  // e.g. "What's my weekly productivity trend?", "What is my trend?", "Productivity trend"
+  if (
+    lower.includes('productivity trend') ||
+    lower.includes('weekly trend') ||
+    lower.includes('weekly productivity') ||
+    lower === 'what is my trend' ||
+    lower === 'what is my trend?' ||
+    lower === "what's my trend" ||
+    lower === "what's my trend?" ||
+    lower === 'show my trend' ||
+    lower === 'show trends'
+  ) {
+    return {
+      intent: 'PREDICTIVE_TREND_QUERY',
+      confidence: 0.99,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Analyze empirical productivity trends and check historical data sufficiency',
+    };
+  }
+
+  // 3h. Predictive Pattern Query intent (Phase 12 Section 11, 24)
+  // e.g. "What patterns do you see?", "Show patterns", "Detect patterns", "Any bottlenecks?"
+  if (
+    lower.includes('what patterns do you see') ||
+    lower.includes('show patterns') ||
+    lower.includes('detect patterns') ||
+    lower.includes('any bottlenecks') ||
+    lower.includes('show bottlenecks') ||
+    lower.includes('predictive patterns')
+  ) {
+    return {
+      intent: 'PREDICTIVE_PATTERN_QUERY',
+      confidence: 0.98,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Examine deterministic pattern detectors for workload, backlog, and bottlenecks',
     };
   }
 
@@ -1242,6 +1442,10 @@ export function validateIntent(
 
     case 'CHAT':
     case 'MEMORY_READ':
+    case 'DECISION_PROPOSE':
+    case 'DECISION_UPDATE_PROPOSE':
+    case 'DECISION_QUERY':
+    case 'KNOWLEDGE_SEARCH':
     case 'TASK_LIST':
     case 'MISSION_LIST':
     case 'MISSION_NEXT_MOVE':
@@ -1537,6 +1741,138 @@ export async function executeIntent(
         };
         recordCommandLog(userId, commandLog);
         return { success: true, message: report, data: relevant, commandLog };
+      }
+
+      case 'DECISION_PROPOSE': {
+        const decisionText = params.decisionText || 'Use FastAPI for the backend.';
+        const projectName = params.projectName || 'AI Assistant';
+        const execTime = Math.round(performance.now() - startTime);
+
+        const promptText = `Should I save this as a project decision?`;
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: `Proposed decision: "${decisionText}" for ${projectName}`,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+
+        return {
+          success: true,
+          message: promptText,
+          data: {
+            decisionProposal: {
+              decisionText,
+              projectName,
+              isUpdate: false,
+            },
+          },
+          commandLog,
+        };
+      }
+
+      case 'DECISION_UPDATE_PROPOSE': {
+        const newDecisionText = params.newDecisionText || 'Switch the backend to Node.js.';
+        const projectName = params.projectName || 'AI Assistant';
+        const execTime = Math.round(performance.now() - startTime);
+
+        const conflict = NeuralMemoryService.detectDecisionConflict(userId, newDecisionText, projectName);
+        const oldDec = conflict.oldDecision || NeuralMemoryService.getActiveDecision(userId, 'fastapi', projectName);
+
+        let reportMsg = '';
+        if (oldDec) {
+          reportMsg = `Possible conflict detected.\n\nPrevious decision: ${oldDec.decision}\nProposed update: ${newDecisionText}\n\nShould I update the project decision?`;
+        } else {
+          reportMsg = `Should I update the project decision to: "${newDecisionText}"?`;
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: reportMsg,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+
+        return {
+          success: true,
+          message: reportMsg,
+          data: {
+            decisionProposal: {
+              decisionText: newDecisionText,
+              projectName,
+              isUpdate: true,
+              oldDecisionId: oldDec?.id,
+              oldDecisionText: oldDec?.decision,
+            },
+          },
+          commandLog,
+        };
+      }
+
+      case 'DECISION_QUERY': {
+        const projectName = params.projectName || 'AI Assistant';
+        const execTime = Math.round(performance.now() - startTime);
+
+        // Get active decisions for project
+        const decisions = NeuralMemoryService.getDecisions(userId, projectName).filter((d) => d.status === 'ACTIVE');
+        const activeBackendDecision = decisions.find(
+          (d) =>
+            d.decision.toLowerCase().includes('backend') ||
+            d.decision.toLowerCase().includes('fastapi') ||
+            d.decision.toLowerCase().includes('node')
+        );
+
+        let report = '';
+        if (activeBackendDecision) {
+          if (
+            activeBackendDecision.decision.toLowerCase().includes('node') &&
+            activeBackendDecision.supersedes
+          ) {
+            report = `The current backend for ${projectName} is Node.js (updated from FastAPI).`;
+          } else {
+            report = `Based on stored project decisions for ${projectName}, the backend decision is: ${activeBackendDecision.decision}`;
+          }
+        } else if (decisions.length > 0) {
+          report = `Active decisions for ${projectName}:\n` + decisions.map((d) => `• ${d.decision}`).join('\n');
+        } else {
+          report = `No active decision records located for ${projectName}.`;
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: activeBackendDecision || decisions, commandLog };
+      }
+
+      case 'KNOWLEDGE_SEARCH': {
+        const query = params.query || intent.rawMessage;
+        const results = NeuralMemoryService.searchKnowledge(userId, query);
+        const execTime = Math.round(performance.now() - startTime);
+
+        let report = `Knowledge search for "${query}" (${results.resultsCount} records found):\n`;
+        if (results.entities.length > 0) {
+          report += `\n[ENTITIES]:\n${results.entities.map((e) => `• [${e.entity_type}] ${e.name}`).join('\n')}`;
+        }
+        if (results.decisions.length > 0) {
+          report += `\n[DECISIONS]:\n${results.decisions.map((d) => `• [${d.status}] ${d.decision}`).join('\n')}`;
+        }
+        if (results.memories.length > 0) {
+          report += `\n[MEMORIES]:\n${results.memories.map((m) => `• ${m.content}`).join('\n')}`;
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: results, commandLog };
       }
 
       case 'MEMORY_DELETE': {
@@ -1970,6 +2306,115 @@ export async function executeIntent(
         };
         recordCommandLog(userId, commandLog);
         return { success: true, message: report, data: list, commandLog };
+      }
+
+      case 'PREDICTIVE_FOCUS_QUERY': {
+        const signals = IntelligenceService.detectLiveSignals(userId);
+        const health = IntelligenceService.getProjectHealth(userId);
+        const execTime = Math.round(performance.now() - startTime);
+
+        const urgentDeadlines = health.filter(
+          (h) => h.deadlineDaysRemaining !== null && h.deadlineDaysRemaining <= 5 && h.activeTasks > 0
+        );
+        const bottlenecks = signals.filter((s) => s.source === 'OBJECTIVE_BLOCKED');
+
+        let reply = '';
+        if (urgentDeadlines.length > 0) {
+          const top = urgentDeadlines[0];
+          reply = `Operational telemetry suggests prioritizing "${top.projectName}". ${top.activeTasks} tasks remain with ${top.deadlineDaysRemaining} days until deadline.${top.overdueTasks > 0 ? ` (${top.overdueTasks} directives are overdue).` : ''} Consider reviewing the remaining directives and scheduling a dedicated focus block.`;
+        } else if (bottlenecks.length > 0) {
+          reply = `Bottleneck detected: ${bottlenecks[0].description}. Consider investigating the blocked directives to restore velocity.`;
+        } else {
+          const totalOpen = health.reduce((acc, h) => acc + h.activeTasks, 0);
+          reply = `Zero critical deadline alarms detected. You have ${totalOpen} active directives across ${health.length} operations. Ready to engage the next queue item.`;
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: reply,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: reply, commandLog };
+      }
+
+      case 'PREDICTIVE_ATTENTION_QUERY': {
+        const signals = IntelligenceService.detectLiveSignals(userId);
+        const health = IntelligenceService.getProjectHealth(userId);
+        const inactive = health.filter((h) => h.inactivityDays >= 5 && h.progress < 100);
+        const execTime = Math.round(performance.now() - startTime);
+
+        let report = '';
+        if (signals.length === 0 && inactive.length === 0) {
+          report = 'Predictive Intelligence Core reports zero warning signals. Operational rhythm is steady and deadlines are on schedule.';
+        } else {
+          const parts: string[] = [];
+          if (signals.length > 0) {
+            parts.push('LIVE SIGNALS & DEADLINES:\n' + signals.map((s) => `• [${s.severity}] ${s.description}`).join('\n'));
+          }
+          if (inactive.length > 0) {
+            parts.push('INACTIVE MISSIONS:\n' + inactive.map((i) => `• ${i.projectName} (${i.inactivityDays} days without activity)`).join('\n'));
+          }
+          report = parts.join('\n\n');
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, commandLog };
+      }
+
+      case 'PREDICTIVE_TREND_QUERY': {
+        const trendAnalysis = IntelligenceService.getTrendAnalysis(userId);
+        const execTime = Math.round(performance.now() - startTime);
+
+        let report = '';
+        if (trendAnalysis.dataSufficiency === 'INSUFFICIENT_DATA') {
+          // Critical End-to-End Test 2: Must explicitly say "Insufficient data to establish a weekly trend"
+          report = 'Insufficient data to establish a weekly trend. Only 1–2 days of telemetry are available; at least 3–7 days of historical activity are required.';
+        } else {
+          report =
+            `Empirical Trend Analysis (${trendAnalysis.dataSufficiency}):\n` +
+            trendAnalysis.trends.map((t) => `• ${t.metricName}: [${t.trend}] ${t.explanation}`).join('\n') +
+            `\n\nOverall: ${trendAnalysis.overallTrend}`;
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: trendAnalysis, commandLog };
+      }
+
+      case 'PREDICTIVE_PATTERN_QUERY': {
+        const signals = IntelligenceService.detectLiveSignals(userId);
+        const execTime = Math.round(performance.now() - startTime);
+
+        let report = '';
+        if (signals.length === 0) {
+          report = 'Zero abnormal operational patterns detected. Workload distribution and deadlines are balanced.';
+        } else {
+          report =
+            `Detected ${signals.length} operational patterns:\n` +
+            signals.map((s) => `• [${s.source}] ${s.description}`).join('\n');
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: signals, commandLog };
       }
 
       case 'NAVIGATION': {

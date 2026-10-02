@@ -8,6 +8,7 @@ import {
   FocusSession,
 } from '../../types';
 import { MissionService } from '../mission';
+import { IntelligenceService } from '../intelligence';
 import { getLocalStore, setLocalStore } from '../supabase';
 import { realtimeService } from '../realtime';
 
@@ -324,9 +325,7 @@ Format: 3-4 bullet points highlighting priority focus, active directives, and ta
         }
 
         if (!briefingText) {
-          const topMission = activeMissions[0]?.title || 'System Maintenance';
-          const topTask = highPriorityTasks[0]?.title || pendingTasks[0]?.title || 'Review active roadmap';
-          briefingText = `Target identified. Daily Briefing online:\n• Primary Strategic Objective: "${topMission}" (Clearance: ${activeMissions[0]?.progress || 0}%)\n• Critical Directive: "${topTask}"\n• Action Queue Status: ${pendingTasks.length} pending directives (${highPriorityTasks.length} high-priority)\n• Recommendation: Engage a 25-minute focus session on the highest priority objective.`;
+          briefingText = IntelligenceService.getDailyBriefing(userId);
         }
 
         // Post as a Notification

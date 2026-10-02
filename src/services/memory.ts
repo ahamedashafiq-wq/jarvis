@@ -1,6 +1,7 @@
 import { Memory } from '../types';
 import { getLocalStore, setLocalStore, supabase, isSupabaseConfigured } from './supabase';
 import { realtimeService } from './realtime';
+import { NeuralMemoryService } from './neuralMemory';
 
 const SENSITIVE_PATTERNS = [
   /password\s*[:=]\s*\S+/i,
@@ -151,6 +152,32 @@ export class MemoryService {
       source: newMem.source,
     });
 
+    // Phase 11: Connect to Knowledge Graph
+    try {
+      const memoryEntity = NeuralMemoryService.saveEntity(userId, {
+        id: `ent_${newMem.id}`,
+        name: `Memory: ${newMem.content.slice(0, 36)}...`,
+        entity_type: 'MEMORY',
+        description: newMem.content,
+        metadata: {
+          category: newMem.category,
+          importance: newMem.importance,
+          memory_id: newMem.id,
+        },
+      });
+
+      // Link MEMORY -> ABOUT -> Project or Concept or Person
+      const projectEntity = NeuralMemoryService.getEntityByName(userId, 'AI Assistant');
+      if (projectEntity) {
+        NeuralMemoryService.createRelationship(userId, memoryEntity.id, projectEntity.id, 'ABOUT', {
+          confidence: 0.95,
+          source: 'EXPLICITLY_SAVED',
+        });
+      }
+    } catch (e) {
+      console.warn('Could not auto-link memory entity to graph', e);
+    }
+
     realtimeService.broadcast('MEMORY_CREATED', newMem);
 
     return { success: true, memory: newMem };
@@ -205,6 +232,12 @@ export class MemoryService {
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('memories').delete().eq('id', id).eq('user_id', userId).then(() => {}, () => {});
+    }
+
+    try {
+      NeuralMemoryService.deleteEntity(userId, `ent_${id}`);
+    } catch (e) {
+      // ignore
     }
 
     this.auditAction(userId, 'MEMORY_DELETED', { id });

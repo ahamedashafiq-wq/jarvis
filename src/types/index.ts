@@ -11,6 +11,12 @@ export type RoutePath =
   | '/agents'
   | '/agents/council'
   | '/memory'
+  | '/memory/graph'
+  | '/memory/timeline'
+  | '/memory/decisions'
+  | '/intelligence'
+  | '/intelligence/analytics'
+  | '/settings/intelligence'
   | '/tasks'
   | '/focus'
   | '/commands'
@@ -221,6 +227,19 @@ export interface Message {
   intentTag?: string;
   pendingPlan?: AIMissionPlan;
   pendingAutomationPlan?: AutomationProposal;
+  usedKnowledge?: {
+    entities: KnowledgeEntity[];
+    relationships: KnowledgeRelationship[];
+    memories: Memory[];
+    decisions: DecisionRecord[];
+  };
+  pendingDecisionProposal?: {
+    decisionText: string;
+    projectName: string;
+    isUpdate?: boolean;
+    oldDecisionId?: string;
+    oldDecisionText?: string;
+  };
 }
 
 export interface Memory {
@@ -230,6 +249,10 @@ export interface Memory {
   category: 'GENERAL' | 'PROFILE' | 'PREFERENCE' | 'PROJECT' | 'ACADEMIC' | 'IMPORTANT_DATE';
   importance: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   source?: 'USER' | 'AI' | 'SYSTEM';
+  sourceType?: MemorySourceType;
+  quality?: MemoryQuality;
+  entityId?: string;
+  decisionId?: string;
   pinned: boolean;
   created_at: number;
   updated_at?: number;
@@ -376,6 +399,10 @@ export type IntentType =
   | 'MEMORY_CREATE'
   | 'MEMORY_READ'
   | 'MEMORY_DELETE'
+  | 'DECISION_PROPOSE'
+  | 'DECISION_UPDATE_PROPOSE'
+  | 'DECISION_QUERY'
+  | 'KNOWLEDGE_SEARCH'
   | 'TASK_CREATE'
   | 'TASK_UPDATE'
   | 'TASK_DELETE'
@@ -396,7 +423,11 @@ export type IntentType =
   | 'SETTINGS_UPDATE'
   | 'NAVIGATION'
   | 'AUTOMATION_CREATE'
-  | 'AUTOMATION_LIST';
+  | 'AUTOMATION_LIST'
+  | 'PREDICTIVE_FOCUS_QUERY'
+  | 'PREDICTIVE_ATTENTION_QUERY'
+  | 'PREDICTIVE_TREND_QUERY'
+  | 'PREDICTIVE_PATTERN_QUERY';
 
 export interface DetectedIntent {
   intent: IntentType;
@@ -529,7 +560,14 @@ export type RealtimeEventType =
   | 'ENTITY_UPDATED'
   | 'ENTITY_DELETED'
   | 'RELATIONSHIP_CREATED'
-  | 'RELATIONSHIP_DELETED';
+  | 'RELATIONSHIP_DELETED'
+  | 'RELATIONSHIP_REMOVED'
+  | 'MEMORY_SAVED'
+  | 'INSIGHT_CREATED'
+  | 'INSIGHT_SEEN'
+  | 'INSIGHT_DISMISSED'
+  | 'INSIGHT_RESOLVED'
+  | 'INSIGHT_EXPIRED';
 
 export interface RealtimeEvent<T = any> {
   id: string;
@@ -810,6 +848,8 @@ export type KnowledgeEntityType =
   | 'VISION_ANALYSIS'
   | 'GOAL'
   | 'DEADLINE'
+  | 'DECISION'
+  | 'PREFERENCE'
   | 'OTHER';
 
 export type KnowledgeRelationshipType =
@@ -826,7 +866,80 @@ export type KnowledgeRelationshipType =
   | 'BELONGS_TO'
   | 'REQUIRES'
   | 'PRODUCES'
-  | 'MENTIONS';
+  | 'MENTIONS'
+  | 'UPDATES'
+  | 'HAS_DECISION'
+  | 'HAS_GOAL'
+  | 'PREFERS';
+
+export type DecisionStatus = 'ACTIVE' | 'SUPERSEDED' | 'REVERTED';
+export type MemorySourceType =
+  | 'USER_SAVED'
+  | 'CONVERSATION'
+  | 'MISSION'
+  | 'TASK'
+  | 'VISION'
+  | 'DOCUMENT'
+  | 'SYSTEM_EVENT';
+export type MemoryQuality =
+  | 'EXPLICITLY_SAVED'
+  | 'DIRECTLY_OBSERVED'
+  | 'DERIVED_FROM_STRUCTURED_DATA'
+  | 'CONTEXTUAL';
+
+export interface DecisionRecord {
+  id: string;
+  user_id: string;
+  decision: string;
+  context: string;
+  projectName?: string;
+  projectEntityId?: string;
+  source: MemorySourceType;
+  quality: MemoryQuality;
+  status: DecisionStatus;
+  supersededBy?: string;
+  supersedes?: string;
+  created_at: number;
+  updated_at?: number;
+}
+
+export interface MemoryTimelineEvent {
+  id: string;
+  timestamp: number;
+  type:
+    | 'DECISION'
+    | 'OBJECTIVE_COMPLETED'
+    | 'VISION_ANALYSIS'
+    | 'CONVERSATION'
+    | 'MEMORY_SAVED'
+    | 'TASK_COMPLETED';
+  title: string;
+  description: string;
+  entityName?: string;
+  source: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ProjectKnowledgeSnapshot {
+  projectName: string;
+  projectEntityId?: string;
+  goal?: string;
+  currentMission?: string;
+  keyDecisions: DecisionRecord[];
+  recentProgress: string[];
+  openQuestions: string[];
+  tasksSummary: { total: number; pending: number; completed: number };
+  relatedMemories: Memory[];
+  relatedVisionAnalyses: { id: string; filename: string; timestamp: number }[];
+}
+
+export interface DecisionConflictReport {
+  hasConflict: boolean;
+  oldDecision?: DecisionRecord;
+  newDecisionProposal?: string;
+  projectName?: string;
+  suggestedAction: 'UPDATE' | 'NEW' | 'IGNORE';
+}
 
 export interface KnowledgeEntity {
   id: string;
@@ -890,5 +1003,106 @@ export interface ContextEngineQueryOptions {
   maxTokens?: number;
   maxHops?: number;
   maxEntities?: number;
+}
+
+// ----------------------------------------------------
+// PHASE 12: PREDICTIVE INTELLIGENCE CORE
+// ----------------------------------------------------
+
+export type InsightSeverity = 'INFO' | 'NOTICE' | 'WARNING';
+
+export type InsightStatus = 'NEW' | 'SEEN' | 'DISMISSED' | 'RESOLVED' | 'EXPIRED';
+
+export type InsightType =
+  | 'DEADLINE_WATCH'
+  | 'TASK_BACKLOG'
+  | 'PROJECT_INACTIVITY'
+  | 'AUTOMATION_FAILURE'
+  | 'OBJECTIVE_BOTTLENECK'
+  | 'WORKLOAD_CONCENTRATION'
+  | 'FOCUS_PATTERN'
+  | 'SYSTEM_PATTERN';
+
+export type DataSufficiency = 'SUFFICIENT_DATA' | 'LIMITED_DATA' | 'INSUFFICIENT_DATA';
+
+export interface PredictiveSignal {
+  id: string;
+  source: string; // e.g. "DEADLINE_APPROACHING", "TASK_BACKLOG_INCREASING", "MISSION_INACTIVE", "AUTOMATION_FAILING"
+  timestamp: number;
+  description: string;
+  severity: InsightSeverity;
+  sourceId?: string;
+  sourceName?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface IntelligenceInsight {
+  id: string;
+  user_id: string;
+  source_type: string; // "MISSION" | "TASK" | "AUTOMATION" | "OBJECTIVE" | "FOCUS"
+  source_id?: string;
+  source_name?: string;
+  insight_type: InsightType;
+  severity: InsightSeverity;
+  title: string;
+  description: string;
+  evidence: string[];
+  suggestions: string[];
+  uncertainties?: string[];
+  data_sufficiency: DataSufficiency;
+  status: InsightStatus;
+  fingerprint: string;
+  created_at: number;
+  updated_at: number;
+  expires_at?: number;
+  last_notified_at?: number;
+  related_memory_ids?: string[];
+  related_vision_ids?: string[];
+  related_decision_ids?: string[];
+}
+
+export interface ProjectHealthMetrics {
+  projectId: string;
+  projectName: string;
+  progress: number;
+  activeTasks: number;
+  completedTasks: number;
+  overdueTasks: number;
+  deadlineDaysRemaining: number | null;
+  inactivityDays: number;
+  status: string;
+  blockedTasksCount: number;
+  recentChangesCount: number;
+  healthStatus: 'HEALTHY' | 'NEEDS_ATTENTION' | 'CRITICAL';
+}
+
+export interface TrendMetric {
+  metricName: string;
+  currentValue: number;
+  previousValue: number;
+  trend: 'INCREASING' | 'DECREASING' | 'STABLE' | 'INSUFFICIENT_DATA';
+  explanation: string;
+  dataSufficiency: DataSufficiency;
+}
+
+export interface PredictiveSettings {
+  predictiveInsights: boolean;
+  deadlineDetection: boolean;
+  workloadAnalysis: boolean;
+  inactivityDetection: boolean;
+  automationFailureAlerts: boolean;
+}
+
+export interface StructuredAIInsightOutput {
+  summary: string;
+  observations: string[];
+  suggestions: string[];
+  uncertainties: string[];
+}
+
+export interface PredictiveProvider {
+  analyze(userId: string): Promise<PredictiveSignal[]>;
+  predict(userId: string, signals: PredictiveSignal[]): Promise<IntelligenceInsight[]>;
+  explain(insight: IntelligenceInsight): string;
 }
 

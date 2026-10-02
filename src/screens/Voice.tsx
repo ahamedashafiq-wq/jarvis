@@ -12,6 +12,7 @@ import { speechService } from '../services/speech';
 import { detectIntentWithGemini, executeIntent } from '../services/intentRouter';
 import { streamGeminiResponse } from '../services/gemini';
 import { MissionService } from '../services/mission';
+import { NeuralMemoryService } from '../services/neuralMemory';
 import { AgentCore } from '../services/agent';
 import { AIOrb } from '../components/AIOrb';
 import { VoiceWaveform } from '../components/VoiceWaveform';
@@ -243,17 +244,18 @@ export const Voice: React.FC<VoiceProps> = ({ onNavigate }) => {
           const tasks = getLocalStore<Task[]>(`tasks_${userId}`, []);
           const missions = MissionService.getMissions(userId);
 
-          // Augment prompt with missions context
-          const missionsContext = missions
-            .slice(0, 3)
-            .map((m) => `Active Mission: ${m.title} (${m.progress}%)`)
-            .join('. ');
+          // Phase 11: Build Bounded Neural Context
+          const neuralEnvelope = NeuralMemoryService.buildBoundedContext(userId, {
+            userQuery: clean,
+          });
 
           const stream = streamGeminiResponse(
-            `${clean} (Context: ${missionsContext})`,
+            clean,
             [],
             memories,
-            tasks
+            tasks,
+            undefined,
+            neuralEnvelope.formattedContextString
           );
 
           let accumulated = '';

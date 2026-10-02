@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Settings as SettingsType, RoutePath } from '../types';
+import { Settings as SettingsType, RoutePath, PredictiveSettings } from '../types';
 import { getLocalStore, setLocalStore } from '../services/supabase';
 import { speechService } from '../services/speech';
-import { Settings as SettingsIcon, Volume2, Shield, Trash2, LogOut, Check, ArrowLeft, Sliders, AlertTriangle } from 'lucide-react';
+import { IntelligenceService } from '../services/intelligence';
+import { Settings as SettingsIcon, Volume2, Shield, Trash2, LogOut, Check, ArrowLeft, Sliders, AlertTriangle, Compass, Zap } from 'lucide-react';
 
 interface SettingsProps {
   onNavigate: (path: RoutePath) => void;
@@ -29,6 +30,18 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
+
+  const [predSettings, setPredSettings] = useState<PredictiveSettings>(() =>
+    IntelligenceService.getSettings(userId)
+  );
+
+  const togglePredSetting = (key: keyof PredictiveSettings) => {
+    const updated = IntelligenceService.updateSettings(userId, { [key]: !predSettings[key] });
+    setPredSettings(updated);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2000);
+    trackEvent('PREDICTIVE_SETTING_CHANGED', JSON.stringify({ [key]: updated[key] }));
+  };
 
   const updateSetting = <K extends keyof SettingsType>(key: K, val: SettingsType[K]) => {
     const updated = { ...settings, [key]: val };
@@ -202,6 +215,77 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               {t}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Phase 12: Predictive Intelligence Settings */}
+      <div className="p-5 rounded-2xl bg-[#0A100D] border border-[#16281F] space-y-4">
+        <div className="flex items-center justify-between border-b border-[#16281F] pb-3">
+          <div className="flex items-center gap-2">
+            <Compass className="w-4 h-4 text-[#19F59A]" />
+            <h2 className="text-xs font-bold tracking-wider text-[#F5F7F6] uppercase">
+              PREDICTIVE INTELLIGENCE & PATTERN SENSORS
+            </h2>
+          </div>
+          <span className="text-[9px] px-2 py-0.5 rounded bg-[#121C17] text-[#19F59A] font-bold">
+            PHASE 12
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            {
+              key: 'predictiveInsights' as const,
+              title: 'PREDICTIVE INSIGHTS (MASTER SWITCH)',
+              description: 'Enable autonomous pattern forecasting, live signal ingestion, and bottleneck detection.',
+            },
+            {
+              key: 'deadlineDetection' as const,
+              title: 'DEADLINE WATCH SENSORS',
+              description: 'Generate early notice when milestones approach with incomplete directives.',
+            },
+            {
+              key: 'workloadAnalysis' as const,
+              title: 'WORKLOAD & BACKLOG SENSORS',
+              description: 'Track task queue accumulation and workload distribution across active objectives.',
+            },
+            {
+              key: 'inactivityDetection' as const,
+              title: 'PROJECT INACTIVITY DETECTION',
+              description: 'Flag operational tracks with zero progress over consecutive days.',
+            },
+            {
+              key: 'automationFailureAlerts' as const,
+              title: 'AUTOMATION FAILURE ALERTS',
+              description: 'Trigger notifications upon repeated consecutive workflow execution errors.',
+            },
+          ].map((item) => {
+            const enabled = predSettings[item.key];
+            return (
+              <div
+                key={item.key}
+                className="p-3 rounded-xl bg-[#050706] border border-[#16281F] flex items-center justify-between gap-4"
+              >
+                <div className="space-y-0.5">
+                  <span className="font-bold text-[#F5F7F6] block text-xs">{item.title}</span>
+                  <p className="text-[10px] text-[#8B9992]">{item.description}</p>
+                </div>
+                <button
+                  onClick={() => togglePredSetting(item.key)}
+                  className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
+                    enabled ? 'bg-[#00D084]' : 'bg-[#16281F]'
+                  }`}
+                  aria-label={`Toggle ${item.title}`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      enabled ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 

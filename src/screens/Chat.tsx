@@ -35,8 +35,11 @@ import {
   Paperclip,
   Eye,
   X,
+  GitCommit,
+  Compass,
 } from 'lucide-react';
 import { VisionService } from '../services/vision';
+import { NeuralMemoryService } from '../services/neuralMemory';
 import { VisionImageMeta } from '../types';
 import {
   Conversation,
@@ -97,6 +100,65 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [attachedImageMeta, setAttachedImageMeta] = useState<VisionImageMeta | null>(null);
   const [attachedImageBase64, setAttachedImageBase64] = useState<string | null>(null);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Phase 11: Knowledge Explanation Expanded State
+  const [expandedKnowledgeMsgs, setExpandedKnowledgeMsgs] = useState<Set<string>>(new Set());
+
+  const toggleExpandKnowledge = (msgId: string) => {
+    setExpandedKnowledgeMsgs((prev) => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId);
+      else next.add(msgId);
+      return next;
+    });
+  };
+
+  const handleConfirmDecision = (proposal: {
+    decisionText: string;
+    projectName: string;
+    isUpdate?: boolean;
+    oldDecisionId?: string;
+    oldDecisionText?: string;
+  }) => {
+    let replyText = '';
+    if (proposal.isUpdate && proposal.oldDecisionId) {
+      const updated = NeuralMemoryService.updateDecision(
+        userId,
+        proposal.oldDecisionId,
+        proposal.decisionText
+      );
+      replyText = `Project decision updated for ${proposal.projectName}:\n• New Decision: ${updated.newDecision.decision}\n• Superseded: ${updated.oldDecision?.decision || 'Previous decision'}\nLinked: NEW DECISION —[UPDATES]→ OLD DECISION.`;
+      showToast('DECISION UPDATED', `Updated project decision: "${proposal.decisionText}"`, 'SUCCESS');
+    } else {
+      const saved = NeuralMemoryService.saveDecision(userId, {
+        decision: proposal.decisionText,
+        projectName: proposal.projectName,
+        source: 'USER_SAVED',
+        quality: 'EXPLICITLY_SAVED',
+      });
+      replyText = `Project decision saved for ${proposal.projectName}: ${saved.decision.decision}\nLinked: DECISION —[ABOUT]→ ${proposal.projectName}.`;
+      showToast('DECISION COMMITTED', `Saved project decision for ${proposal.projectName}.`, 'SUCCESS');
+    }
+
+    const confirmMsg: Message = {
+      id: 'ast_' + Date.now(),
+      conversation_id: activeConvId,
+      user_id: userId,
+      role: 'assistant',
+      content: replyText,
+      created_at: Date.now(),
+      intentTag: proposal.isUpdate ? 'DECISION: UPDATED' : 'DECISION: COMMITTED',
+    };
+
+    setMessages((prev) => {
+      const updated = prev.map((m) =>
+        m.pendingDecisionProposal ? { ...m, pendingDecisionProposal: undefined } : m
+      );
+      const next = [...updated, confirmMsg];
+      setLocalStore(`msgs_${activeConvId}`, next);
+      return next;
+    });
+  };
 
   const handleAttachImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -225,6 +287,36 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
       if (lastWithPlan?.pendingPlan) {
         setInput('');
         handleApprovePlanFromChat(lastWithPlan.pendingPlan);
+        return;
+      }
+    }
+
+    // Phase 11: Check if user said YES to a pending decision proposal (Critical End-to-End Test 1)
+    const cleanLower = prompt.trim().toLowerCase();
+    const isAffirmative =
+      cleanLower === 'yes' ||
+      cleanLower === 'yes.' ||
+      cleanLower === 'yep' ||
+      cleanLower === 'confirm' ||
+      cleanLower === 'confirm decision' ||
+      cleanLower === 'yes please';
+
+    if (isAffirmative) {
+      const lastMsgWithProposal = [...messages].reverse().find((m) => m.pendingDecisionProposal);
+      if (lastMsgWithProposal?.pendingDecisionProposal) {
+        setInput('');
+        const userConfirmMsg: Message = {
+          id: 'usr_' + Date.now(),
+          conversation_id: activeConvId,
+          user_id: userId,
+          role: 'user',
+          content: prompt,
+          created_at: Date.now(),
+        };
+        const updated = [...messages, userConfirmMsg];
+        setMessages(updated);
+        setLocalStore(`msgs_${activeConvId}`, updated);
+        handleConfirmDecision(lastMsgWithProposal.pendingDecisionProposal);
         return;
       }
     }
@@ -474,7 +566,36 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         return;
       }
 
+      // Phase 11: If DECISION_PROPOSE or DECISION_UPDATE_PROPOSE with pendingDecisionProposal
       if (
+        (detectedIntent.intent === 'DECISION_PROPOSE' ||
+          detectedIntent.intent === 'DECISION_UPDATE_PROPOSE') &&
+        actionResult.data?.decisionProposal
+      ) {
+        setIsStreaming(false);
+        setOrbState('IDLE');
+        const decMsg: Message = {
+          id: 'ast_' + Date.now(),
+          conversation_id: activeConvId,
+          user_id: userId,
+          role: 'assistant',
+          content: actionResult.message,
+          created_at: Date.now(),
+          intentTag:
+            detectedIntent.intent === 'DECISION_UPDATE_PROPOSE'
+              ? 'DECISION: CONFLICT DETECTED'
+              : 'DECISION: PROPOSAL READY',
+          pendingDecisionProposal: actionResult.data.decisionProposal,
+        };
+        const finalMessages = [...updatedWithUser, decMsg];
+        setMessages(finalMessages);
+        setLocalStore(`msgs_${activeConvId}`, finalMessages);
+        return;
+      }
+
+      if (
+        detectedIntent.intent === 'DECISION_QUERY' ||
+        detectedIntent.intent === 'KNOWLEDGE_SEARCH' ||
         detectedIntent.intent === 'OBJECTIVE_COMPLETE' ||
         detectedIntent.intent === 'MISSION_NEXT_MOVE' ||
         detectedIntent.intent === 'MISSION_STATUS' ||
@@ -522,8 +643,15 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
       });
     }
 
-    // 4. Retrieve ONLY relevant memories for Gemini context
-    const relevantMemories = MemoryService.findRelevantMemories(userId, prompt, 4);
+    // 4. Phase 11: Build Bounded Neural Context (Entities, Relationships, Decisions, Memories)
+    const boundedContext = NeuralMemoryService.buildBoundedContext(userId, {
+      userQuery: prompt,
+      activeConversationId: activeConvId,
+    });
+    const relevantMemories = boundedContext.relevantMemories.length > 0
+      ? boundedContext.relevantMemories
+      : MemoryService.findRelevantMemories(userId, prompt, 4);
+    const activeDecisions = NeuralMemoryService.getDecisions(userId).filter((d) => d.status === 'ACTIVE').slice(0, 3);
     const tasks = getLocalStore<Task[]>(`tasks_${userId}`, []);
 
     // 5. Stream Assistant Response with grounded action result
@@ -548,7 +676,8 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         history,
         relevantMemories,
         tasks,
-        actionContext
+        actionContext,
+        boundedContext.formattedContextString
       );
 
       for await (const chunk of stream) {
@@ -565,7 +694,18 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
       setMessages((prev) => {
         const finalMessages = prev.map((msg) =>
           msg.id === assistantMsgId
-            ? { ...msg, content: accumulated, isStreaming: false, intentTag: actionBadge || detectedIntent.intent }
+            ? {
+                ...msg,
+                content: accumulated,
+                isStreaming: false,
+                intentTag: actionBadge || detectedIntent.intent,
+                usedKnowledge: {
+                  entities: boundedContext.primaryEntities,
+                  relationships: boundedContext.relationships,
+                  memories: relevantMemories,
+                  decisions: activeDecisions,
+                },
+              }
             : msg
         );
         setLocalStore(`msgs_${activeConvId}`, finalMessages);
@@ -792,6 +932,110 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
                           EDIT IN MISSION CONTROL
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Phase 11: Interactive Project Decision Proposal Card (Critical End-to-End Test 1) */}
+                  {msg.pendingDecisionProposal && (
+                    <div className="mt-3 p-3.5 rounded-xl bg-[#050706] border border-[#A78BFA]/40 space-y-3 font-mono">
+                      <div className="flex items-center justify-between text-[10px] text-[#A78BFA] font-bold border-b border-[#16281F] pb-2">
+                        <div className="flex items-center gap-1.5">
+                          <GitCommit className="w-3.5 h-3.5 text-[#A78BFA]" />
+                          <span>
+                            {msg.pendingDecisionProposal.isUpdate
+                              ? 'PROJECT DECISION CONFLICT / UPDATE'
+                              : 'PROJECT DECISION PROPOSAL'}
+                          </span>
+                        </div>
+                        <span>{msg.pendingDecisionProposal.projectName}</span>
+                      </div>
+
+                      {msg.pendingDecisionProposal.isUpdate &&
+                        msg.pendingDecisionProposal.oldDecisionText && (
+                          <div className="p-2 rounded bg-[#16281F]/40 border border-[#16281F] text-[10px] text-[#8B9992] space-y-0.5">
+                            <span className="text-[#FFB000] font-bold">PREVIOUS DECISION:</span>
+                            <div className="line-through text-[#8B9992]">
+                              {msg.pendingDecisionProposal.oldDecisionText}
+                            </div>
+                          </div>
+                        )}
+
+                      <div className="p-2.5 rounded bg-[#0A100D] border border-[#A78BFA]/30 text-xs font-bold text-[#F5F7F6]">
+                        <span className="text-[#A78BFA] block text-[9px] uppercase font-bold mb-0.5">
+                          {msg.pendingDecisionProposal.isUpdate
+                            ? 'PROPOSED NEW DECISION:'
+                            : 'PROPOSED DECISION:'}
+                        </span>
+                        {msg.pendingDecisionProposal.decisionText}
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#16281F]">
+                        <button
+                          onClick={() => handleConfirmDecision(msg.pendingDecisionProposal!)}
+                          className="px-4 py-2 rounded-xl bg-[#A78BFA] text-[#050706] font-bold text-xs hover:bg-[#A78BFA]/90 transition-all shadow-[0_0_12px_rgba(167,139,250,0.3)] flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>YES, CONFIRM DECISION</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Phase 11: Memory / Knowledge Explanation Transparency (Requirement 20) */}
+                  {msg.usedKnowledge && (
+                    <div className="mt-2 pt-2 border-t border-[#16281F]/60">
+                      <button
+                        onClick={() => toggleExpandKnowledge(msg.id)}
+                        className="text-[10px] text-[#38E1FF] hover:text-[#19F59A] font-bold flex items-center gap-1 transition-colors"
+                      >
+                        <Compass className="w-3 h-3" />
+                        <span>
+                          {expandedKnowledgeMsgs.has(msg.id)
+                            ? 'HIDE RELEVANT KNOWLEDGE'
+                            : '[VIEW RELEVANT KNOWLEDGE / MEMORY]'}
+                        </span>
+                      </button>
+                      {expandedKnowledgeMsgs.has(msg.id) && (
+                        <div className="mt-2 p-3 rounded-xl bg-[#050706] border border-[#16281F] space-y-2 text-[10px] font-mono">
+                          {msg.usedKnowledge.decisions.length > 0 && (
+                            <div>
+                              <span className="text-[#A78BFA] font-bold block mb-1">
+                                ACTIVE RELEVANT DECISIONS:
+                              </span>
+                              {msg.usedKnowledge.decisions.map((d) => (
+                                <div key={d.id} className="text-[#F5F7F6]">
+                                  • {d.decision}{' '}
+                                  <span className="text-[#8B9992]">({d.quality})</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {msg.usedKnowledge.memories.length > 0 && (
+                            <div>
+                              <span className="text-[#FFB000] font-bold block mb-1">
+                                PERSISTENT MEMORY RECORDS:
+                              </span>
+                              {msg.usedKnowledge.memories.map((m) => (
+                                <div key={m.id} className="text-[#F5F7F6]">
+                                  • [{m.category}] {m.content}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {msg.usedKnowledge.entities.length > 0 && (
+                            <div>
+                              <span className="text-[#19F59A] font-bold block mb-1">
+                                CONNECTED KNOWLEDGE ENTITIES:
+                              </span>
+                              {msg.usedKnowledge.entities.map((e) => (
+                                <div key={e.id} className="text-[#8B9992]">
+                                  • [{e.entity_type}] {e.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 

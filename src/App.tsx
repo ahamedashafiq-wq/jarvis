@@ -26,6 +26,7 @@ import { Agents } from './screens/Agents';
 import { AgentCouncil } from './screens/AgentCouncil';
 import { AutomationScreen } from './screens/Automation';
 import { VisionScreen } from './screens/Vision';
+import { IntelligenceScreen } from './screens/Intelligence';
 import { automationScheduler } from './services/automation/scheduler';
 
 export const App: React.FC = () => {
@@ -125,6 +126,12 @@ export const App: React.FC = () => {
         return <AutomationScreen onNavigate={navigate} />;
       case '/vision':
         return <VisionScreen onNavigate={navigate} />;
+      case '/intelligence':
+        return <IntelligenceScreen onNavigate={navigate} />;
+      case '/intelligence/analytics':
+        return <IntelligenceScreen onNavigate={navigate} initialTab="ANALYTICS" />;
+      case '/settings/intelligence':
+        return <Settings onNavigate={navigate} />;
       case '/chat':
         return <Chat onNavigate={navigate} />;
       case '/voice':
@@ -132,6 +139,14 @@ export const App: React.FC = () => {
       case '/tasks':
         return <Tasks onNavigate={navigate} />;
       case '/memory':
+        return <MemoryScreen onNavigate={navigate} />;
+      case '/memory/graph':
+        return <MemoryScreen onNavigate={navigate} initialTab="GRAPH" />;
+      case '/memory/timeline':
+        return <MemoryScreen onNavigate={navigate} initialTab="TIMELINE" />;
+      case '/memory/decisions':
+        return <MemoryScreen onNavigate={navigate} initialTab="DECISIONS" />;
+      case '/neural-memory':
         return <MemoryScreen onNavigate={navigate} />;
       case '/focus':
         return <FocusScreen onNavigate={navigate} />;

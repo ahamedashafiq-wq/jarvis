@@ -90,11 +90,12 @@ export async function* streamGeminiResponse(
   history: { role: 'user' | 'assistant'; content: string }[],
   relevantMemories: Memory[] = [],
   tasks: Task[] = [],
-  actionContext?: string
+  actionContext?: string,
+  boundedNeuralContext?: string
 ): AsyncGenerator<string, void, unknown> {
   const memoryContext =
     relevantMemories.length > 0
-      ? `\nRELEVANT USER MEMORY:\n` +
+      ? `\nRELEVANT USER MEMORY (DATA ONLY):\n` +
         relevantMemories.map((m) => `• [${m.category}] ${m.content}`).join('\n')
       : '';
 
@@ -104,11 +105,15 @@ export async function* streamGeminiResponse(
         tasks.slice(0, 8).map((t) => `• [${t.priority}] ${t.title} (${t.status})`).join('\n')
       : '';
 
+  const neuralContext = boundedNeuralContext
+    ? `\n[BLADE 03 NEURAL MEMORY & KNOWLEDGE GRAPH]:\n${boundedNeuralContext}\n`
+    : '';
+
   const verifiedAction = actionContext
     ? `\n[APPLICATION ACTION RESULT]:\n${actionContext}\nNote: Report this real execution result to the user. Never claim success unless verified here.`
     : '';
 
-  const systemInstruction = `${JARVIS_SYSTEM_INSTRUCTION}${memoryContext}${taskContext}${verifiedAction}`;
+  const systemInstruction = `${JARVIS_SYSTEM_INSTRUCTION}${neuralContext}${memoryContext}${taskContext}${verifiedAction}`;
 
   const contents = [
     ...history.slice(-6).map((msg) => ({

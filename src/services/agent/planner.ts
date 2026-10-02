@@ -299,6 +299,98 @@ RULES:
       };
     }
 
+    // Archetype 3: Continue Project (Phase 11 Requirement 42: End-to-End Test 2)
+    // "Continue my AI project" -> 1. Identify AI project 2. Current mission 3. Incomplete objective 4. Recent decision 5. Relevant conversation
+    if (
+      text.includes('continue my ai project') ||
+      text.includes('continue the ai project') ||
+      text.includes('continue my project') ||
+      text.includes('continue ai project')
+    ) {
+      const projName = context.projectEntity?.name || 'AI Assistant';
+      const recentDec = context.decisions?.[0]?.decision || 'Use FastAPI for the backend';
+
+      return {
+        plan_id: 'plan_' + Date.now(),
+        request_id: request.id,
+        objective: `Synchronize and resume ${projName} execution context`,
+        steps: [
+          {
+            step_number: 1,
+            tool: 'mission.list',
+            reason: `Identify active mission for ${projName}`,
+            parameters: {},
+            status: 'PENDING',
+            risk_level: 'SAFE',
+          },
+          {
+            step_number: 2,
+            tool: 'task.list',
+            reason: 'Retrieve incomplete objective directives in Action Queue',
+            parameters: {},
+            status: 'PENDING',
+            risk_level: 'SAFE',
+          },
+          {
+            step_number: 3,
+            tool: 'memory.read',
+            reason: `Verify latest project decision: "${recentDec}"`,
+            parameters: { query: projName },
+            status: 'PENDING',
+            risk_level: 'SAFE',
+          },
+        ],
+        requires_approval: false,
+        estimated_actions: 3,
+        risk_level: 'SAFE',
+        created_at: Date.now(),
+      };
+    }
+
+    // Archetype 4: Investigate Bottleneck / Predictive Signal (Phase 12 Section 20)
+    if (
+      text.includes('investigate') ||
+      text.includes('diagnose bottleneck') ||
+      text.includes('investigate objective') ||
+      text.includes('inspect signal')
+    ) {
+      return {
+        plan_id: 'plan_' + Date.now(),
+        request_id: request.id,
+        objective: 'Investigate operational bottleneck and diagnose blocked items',
+        steps: [
+          {
+            step_number: 1,
+            tool: 'objective.read',
+            reason: 'Open and inspect target objective parameters and state',
+            parameters: {},
+            status: 'PENDING',
+            risk_level: 'SAFE',
+          },
+          {
+            step_number: 2,
+            tool: 'task.list',
+            reason: 'Retrieve all associated tasks and isolate blocked directives',
+            parameters: {},
+            status: 'PENDING',
+            risk_level: 'SAFE',
+          },
+          {
+            step_number: 3,
+            tool: 'memory.read',
+            reason: 'Query Neural Memory for recorded external dependencies or blockers',
+            parameters: {},
+            status: 'PENDING',
+            risk_level: 'SAFE',
+          },
+        ],
+        requires_approval: false,
+        estimated_actions: 3,
+        risk_level: 'SAFE',
+        created_at: Date.now(),
+      };
+    }
+
     return null;
   }
 

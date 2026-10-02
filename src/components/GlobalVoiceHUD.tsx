@@ -4,6 +4,7 @@ import { speechService } from '../services/speech';
 import { detectIntentWithGemini, executeIntent } from '../services/intentRouter';
 import { streamGeminiResponse } from '../services/gemini';
 import { AgentCore } from '../services/agent';
+import { NeuralMemoryService } from '../services/neuralMemory';
 import { AIOrb } from './AIOrb';
 import { VoiceWaveform } from './VoiceWaveform';
 import { useAuth } from '../context/AuthContext';
@@ -158,11 +159,21 @@ export const GlobalVoiceHUD: React.FC<GlobalVoiceHUDProps> = ({
             processingRef.current = false;
           }
         } else {
-          // Conversational query via Gemini streaming
+          // Conversational query via Gemini streaming with Bounded Neural Context
           setVoiceState('PROCESSING');
           const memories = getLocalStore<Memory[]>(`memories_${userId}`, []);
           const tasks = getLocalStore<Task[]>(`tasks_${userId}`, []);
-          const stream = streamGeminiResponse(cleanText, [], memories, tasks);
+          const neuralEnvelope = NeuralMemoryService.buildBoundedContext(userId, {
+            userQuery: cleanText,
+          });
+          const stream = streamGeminiResponse(
+            cleanText,
+            [],
+            memories,
+            tasks,
+            undefined,
+            neuralEnvelope.formattedContextString
+          );
 
           let accumulated = '';
           for await (const chunk of stream) {
