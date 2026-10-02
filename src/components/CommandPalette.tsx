@@ -71,7 +71,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       id: 'nav_command',
       section: 'NAVIGATE',
       title: 'Neural Command Surface',
-      subtitle: 'Primary JARVIS operational deck',
+      subtitle: 'Primary ZORO operational deck',
       icon: <Command className="w-4 h-4 text-[#19F59A]" />,
       route: '/command',
       keywords: ['command', 'home', 'control', 'terminal'],
@@ -79,7 +79,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'nav_os',
       section: 'NAVIGATE',
-      title: 'JARVIS OS 1.0 Workspace',
+      title: 'ZORO OS Workspace',
       subtitle: 'Multi-window AI operating environment',
       icon: <Monitor className="w-4 h-4 text-[#38E1FF]" />,
       route: '/os',
@@ -478,7 +478,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               <Command className="w-6 h-6 mx-auto text-[#8B9992]/60" />
               <p className="text-xs">No direct tactical action found for "{query}".</p>
               <p className="text-[10px] text-[#8B9992]/80">
-                Press Enter to submit to JARVIS Neural Command Bar.
+                Press Enter to submit to ZORO Neural Command Bar.
               </p>
               <button
                 onClick={() => {

@@ -1,72 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Shield,
-  Command as CommandIcon,
-  Mic,
-  Paperclip,
-  Send,
-  Target,
-  Database,
-  Eye,
-  Cpu,
-  Zap,
-  TrendingUp,
-  Sparkles,
-  Layers,
-  ArrowRight,
-  Activity,
-  Radio,
   Search,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Pin,
-  Play,
-  Star,
-  RefreshCw,
-  X,
-  CheckSquare,
-  Timer,
-  ExternalLink,
+  ArrowRight,
+  Shield,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   ActionPreviewData,
-  CommandAlias,
   CommandResultData,
   CommandSurfaceState,
   GlobalSearchResult,
-  PinnedFavoriteCommand,
-  RealtimeEvent,
   RoutePath,
   Task,
 } from '../types';
 import { CommandPreviewModal } from '../components/CommandPreviewModal';
-import { ZoroHeroAICore } from '../components/zoro/ZoroHeroAICore';
+import { ZoroCore } from '../components/zoro/ZoroCore';
+import { CommandBar } from '../components/zoro/CommandBar';
 import { ZoroThinkingPipeline } from '../components/zoro/ZoroThinkingPipeline';
 import { ZoroStructuredResponse } from '../components/zoro/ZoroStructuredResponse';
-import { ZoroAgentDeck } from '../components/zoro/ZoroAgentDeck';
-import { ZoroIntelligenceFeed } from '../components/zoro/ZoroIntelligenceFeed';
-import { NeuralCommandSurface } from '../components/command/NeuralCommandSurface';
-import { CommandProcessVisualizer } from '../components/command/CommandProcessVisualizer';
-import { MissionControlWidget } from '../components/mission/MissionControlWidget';
-import { AgentBrainDeck } from '../components/agent/AgentBrainDeck';
-import { VisionCoreWidget } from '../components/vision/VisionCoreWidget';
-import { MemoryCoreWidget } from '../components/memory/MemoryCoreWidget';
-import { ActionQueueWidget } from '../components/mission/ActionQueueWidget';
-import { AnalyticsCoreWidget } from '../components/analytics/AnalyticsCoreWidget';
+import { ExecutionTimeline } from '../components/zoro/ExecutionTimeline';
+import { AgentCouncil } from '../components/zoro/AgentCouncil';
+import { ProjectCommandCenter } from '../components/zoro/ProjectCommandCenter';
+import { PriorityPanel } from '../components/zoro/PriorityPanel';
+import { IntelligenceFeed } from '../components/zoro/IntelligenceFeed';
+import { QuickActions } from '../components/zoro/QuickActions';
+import { MissionPanel } from '../components/zoro/MissionPanel';
+import { TelemetryPanel } from '../components/zoro/TelemetryPanel';
+import { MemoryMap } from '../components/zoro/MemoryMap';
+import { VoiceAssistant } from '../components/zoro/VoiceAssistant';
+import { DeveloperConsoleModal } from '../components/layout/DeveloperConsoleModal';
+
 import { CommandRouterService } from '../services/commandCenter/commandRouter';
 import { GlobalSearchService } from '../services/commandCenter/search';
 import { MissionService } from '../services/mission';
 import { MemoryService } from '../services/memory';
 import { AutomationService } from '../services/automation';
 import { AgentCore } from '../services/agent';
-import { VisionService } from '../services/vision';
-import { IntelligenceService } from '../services/intelligence';
-import { speechService } from '../services/speech';
 import { realtimeService } from '../services/realtime';
 import { soundService } from '../services/sound';
-import { getLocalStore, setLocalStore, isSupabaseConfigured } from '../services/supabase';
+import { getLocalStore } from '../services/supabase';
 
 interface CommandCenterProps {
   onNavigate: (path: RoutePath) => void;
@@ -82,37 +56,29 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const { currentSession } = useAuth();
   const userId = currentSession?.userId || 'guest';
 
-  // Command State
+  // Command & Surface State
   const [surfaceState, setSurfaceState] = useState<CommandSurfaceState>('IDLE');
   const [activeResult, setActiveResult] = useState<CommandResultData | null>(null);
   const [activePreview, setActivePreview] = useState<ActionPreviewData | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
 
-  // Search Mode
+  // Global Search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
 
-  // Mission Context
+  // Context & Metrics
   const [activeMission, setActiveMission] = useState<{ id: string; title: string } | null>(null);
-  const [isChangingContext, setIsChangingContext] = useState(false);
-
-  // Real Subsystem Live Telemetry
   const [stats, setStats] = useState({
     activeMissions: 0,
     totalMemories: 0,
     activeTasks: 0,
     activeAutomations: 0,
-    agentExecutionsCount: 0,
-    visionCount: 0,
-    intelligenceSignalsCount: 0,
+    agentActive: false,
   });
 
-  // Recent Command History
-  const [recentCommands, setRecentCommands] = useState<any[]>([]);
-
-  // Load Subsystem Data & Activity
   const refreshTelemetry = () => {
     try {
       const msns = MissionService.getMissions(userId);
@@ -123,26 +89,20 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       const autos = AutomationService.getAutomations(userId);
       const activeAutos = autos.filter((a) => a.status === 'ACTIVE');
       const agents = AgentCore.getExecutions(userId);
-      const visions = VisionService.getSessions(userId);
-      const signals = IntelligenceService.detectLiveSignals(userId);
+      const isRunning = agents.some((a) =>
+        ['UNDERSTANDING', 'PLAN_READY', 'EXECUTING', 'VERIFYING'].includes(a.status)
+      );
 
       setStats({
         activeMissions: activeMsns.length,
         totalMemories: mems.length,
         activeTasks: pendingTasks.length,
         activeAutomations: activeAutos.length,
-        agentExecutionsCount: agents.length,
-        visionCount: visions.length,
-        intelligenceSignalsCount: signals.length,
+        agentActive: isRunning,
       });
 
-      // Active Mission Context
       const ctx = CommandRouterService.getActiveMissionContext(userId);
       setActiveMission(ctx);
-
-      // Recent Commands
-      const cmds = getLocalStore<any[]>(`cmds_${userId}`, []);
-      setRecentCommands(cmds.slice(0, 10));
     } catch (e) {
       console.warn('Telemetry refresh error:', e);
     }
@@ -152,7 +112,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     refreshTelemetry();
   }, [userId]);
 
-  // Realtime Subsystem Listener
   useEffect(() => {
     const unsub = realtimeService.on('*', () => {
       refreshTelemetry();
@@ -160,7 +119,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     return () => unsub();
   }, [userId]);
 
-  // Handle Initial Command if passed in
   useEffect(() => {
     if (initialCommand) {
       handleExecuteCommand(initialCommand);
@@ -171,7 +129,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const handleExecuteCommand = async (command: string, imageFile?: File | null) => {
     if (!command.trim() && !imageFile) return;
 
-    // Check if query is a global search prefix
+    // Search query prefix interception
     if (
       command.toLowerCase().startsWith('search:') ||
       command.toLowerCase().startsWith('find ') ||
@@ -205,7 +163,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       setActiveResult(result);
       refreshTelemetry();
     } catch (err: any) {
-      console.error('Command Execution Failed:', err);
+      console.error('Command Execution Anomaly:', err);
       setSurfaceState('ERROR');
       setActiveResult({
         id: 'cmd_err_' + Date.now(),
@@ -214,12 +172,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         status: 'FAILED',
         responseMode: 'ERROR',
         headline: 'DIRECTIVE ANOMALY',
-        summary: err?.message || 'The command could not be safely fulfilled.',
+        summary: err?.message || 'The directive could not be safely fulfilled.',
       });
     }
   };
 
-  // Handle Approval Modal Execution
+  // Handle Approvals
   const handleApproveAction = async (preview: ActionPreviewData) => {
     setIsApproving(true);
     setSurfaceState('EXECUTING');
@@ -246,73 +204,21 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   return (
     <div className="space-y-6 select-none font-mono">
       {/* ---------------------------------------------------- */}
-      {/* 1. ZORO HERO AI CORE (Section 7)                     */}
+      {/* 1. UNIVERSAL INTELLIGENT COMMAND BAR                 */}
       {/* ---------------------------------------------------- */}
-      <ZoroHeroAICore
-        onNavigate={onNavigate}
-        onExecuteCommand={handleExecuteCommand}
-        onOpenVoice={onOpenVoiceHUD || (() => {})}
-        systemState={surfaceState}
-        activeMissionCount={stats.activeMissions}
-        totalTaskCount={stats.activeTasks}
-        memoryNodeCount={stats.totalMemories}
-      />
-
-      {/* Subsystem Live Telemetry Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs font-mono">
-        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
-          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">SYSTEM HEALTH</div>
-          <div className="text-xs font-bold text-zoro-cyan mt-0.5">100% NOMINAL</div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
-          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">ACTIVE MISSIONS</div>
-          <div className="text-sm font-bold text-zoro-text tabular-nums mt-0.5">
-            {stats.activeMissions}
-          </div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
-          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">AGENT STATUS</div>
-          <div className="text-xs font-bold text-zoro-blue mt-0.5">
-            {surfaceState === 'WAITING_APPROVAL' ? 'APPROVAL REQ' : 'READY'}
-          </div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
-          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">MEMORY BANK</div>
-          <div className="text-sm font-bold text-zoro-violet tabular-nums mt-0.5">
-            {stats.totalMemories} NODES
-          </div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
-          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">AUTOMATIONS</div>
-          <div className="text-sm font-bold text-zoro-warning tabular-nums mt-0.5">
-            {stats.activeAutomations} ACTIVE
-          </div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
-          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">REALTIME</div>
-          <div className="text-xs font-bold text-zoro-cyan mt-0.5">
-            {realtimeService.isConnected() ? 'CONNECTED' : 'SYNCING'}
-          </div>
-        </div>
-      </div>
-
-      {/* ---------------------------------------------------- */}
-      {/* 2. ZORO NATURAL LANGUAGE COMMAND SURFACE (Section 10) */}
-      {/* ---------------------------------------------------- */}
-      <NeuralCommandSurface
+      <CommandBar
         onExecute={handleExecuteCommand}
-        surfaceState={surfaceState}
-        onOpenVoiceHUD={onOpenVoiceHUD || (() => {})}
         isExecuting={
           surfaceState === 'THINKING' ||
           surfaceState === 'PLANNING' ||
           surfaceState === 'EXECUTING' ||
           surfaceState === 'VERIFYING'
         }
+        onOpenVoiceHUD={onOpenVoiceHUD}
       />
 
       {/* ---------------------------------------------------- */}
-      {/* 3. AI THINKING PIPELINE (Section 11 & 35)            */}
+      {/* 2. REASONING PIPELINE VISUALIZER (When active)       */}
       {/* ---------------------------------------------------- */}
       {surfaceState !== 'IDLE' && (
         <ZoroThinkingPipeline
@@ -323,7 +229,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* 4. STRUCTURED ZORO RESPONSE CARD (Section 34)        */}
+      {/* 3. STRUCTURED ZORO RESPONSE BRIEFING                 */}
       {/* ---------------------------------------------------- */}
       {activeResult && !isSearchActive && (
         <ZoroStructuredResponse
@@ -334,18 +240,18 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* 5. GLOBAL SEARCH RESULTS OVERLAY                     */}
+      {/* 4. GLOBAL SEARCH RESULTS OVERLAY (When triggered)    */}
       {/* ---------------------------------------------------- */}
       {isSearchActive && (
-        <div className="p-4 sm:p-5 rounded-lg border border-jarvis-primary/40 bg-jarvis-surfaceElevated shadow-2xl space-y-3">
-          <div className="flex items-center justify-between border-b border-jarvis-border/60 pb-2">
+        <div className="p-4 sm:p-5 rounded-2xl border border-zoro-cyan/40 bg-zoro-panelElevated shadow-2xl space-y-3">
+          <div className="flex items-center justify-between border-b border-zoro-border pb-2">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-jarvis-primary" />
-              <span className="font-bold text-xs text-jarvis-text">
+              <Search className="w-4 h-4 text-zoro-cyan" />
+              <span className="font-bold text-xs text-zoro-text">
                 GLOBAL SEARCH: &ldquo;{searchQuery}&rdquo;
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-jarvis-primary/10 text-jarvis-primary font-bold">
-                {searchResults.length} RESULTS
+              <span className="text-[10px] px-2 py-0.5 rounded bg-zoro-cyan/15 text-zoro-cyan font-bold">
+                {searchResults.length} RECORDS
               </span>
             </div>
             <button
@@ -353,41 +259,41 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                 setIsSearchActive(false);
                 setSearchQuery('');
               }}
-              className="text-xs text-jarvis-textMuted hover:text-jarvis-text"
+              className="text-xs text-zoro-textMuted hover:text-zoro-text"
             >
-              CLOSE SEARCH
+              CLOSE
             </button>
           </div>
 
-          <div className="divide-y divide-jarvis-border/40 max-h-96 overflow-y-auto space-y-1">
+          <div className="divide-y divide-zoro-border/40 max-h-80 overflow-y-auto space-y-1">
             {searchResults.length === 0 ? (
-              <div className="p-8 text-center text-jarvis-textMuted text-xs">
-                Zero records found across missions, tasks, memories, decisions, vision, and automations.
+              <div className="p-8 text-center text-zoro-textMuted text-xs">
+                Zero matching items found across missions, tasks, memories, or actions.
               </div>
             ) : (
               searchResults.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => onNavigate(item.route)}
-                  className="p-3 rounded hover:bg-jarvis-surface cursor-pointer flex items-center justify-between transition-colors group"
+                  className="p-3 rounded-lg hover:bg-zoro-panel cursor-pointer flex items-center justify-between transition-colors group"
                 >
                   <div className="space-y-0.5 min-w-0 pr-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-jarvis-bg border border-jarvis-border text-jarvis-textMuted">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zoro-bg border border-zoro-border text-zoro-textMuted">
                         {item.type}
                       </span>
-                      <span className="font-bold text-xs text-jarvis-text truncate group-hover:text-jarvis-primary">
+                      <span className="font-bold text-xs text-zoro-text truncate group-hover:text-zoro-cyan">
                         {item.title}
                       </span>
                     </div>
-                    <p className="text-[11px] text-jarvis-textSecondary truncate">{item.description}</p>
+                    <p className="text-[11px] text-zoro-textSecondary truncate">{item.description}</p>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0 text-right">
-                    <span className="text-[10px] text-jarvis-primary font-bold px-2 py-0.5 rounded bg-jarvis-primary/10 border border-jarvis-primary/20">
+                  <div className="flex items-center gap-2 text-right shrink-0">
+                    <span className="text-[10px] text-zoro-cyan font-bold tabular-nums">
                       {item.relevance}%
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-jarvis-textMuted group-hover:text-jarvis-primary group-hover:translate-x-0.5 transition-all" />
+                    <ArrowRight className="w-3.5 h-3.5 text-zoro-textMuted group-hover:text-zoro-cyan group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </div>
               ))
@@ -397,128 +303,116 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* 6. RESPONSIVE GRID OF SUBSYSTEM WIDGETS (Section 4 & 44) */}
+      {/* 5. CENTRAL HERO AI CORE (Section 4)                  */}
       {/* ---------------------------------------------------- */}
-      {/* ROW 1: AGENT COMMAND CENTER & COUNCIL (Section 12 & 13) */}
-      <ZoroAgentDeck
-        userId={userId}
+      <ZoroCore
         onNavigate={onNavigate}
+        onOpenVoice={onOpenVoiceHUD || (() => {})}
+        systemState={surfaceState}
+        activeMissionCount={stats.activeMissions}
+        totalTaskCount={stats.activeTasks}
+        memoryNodeCount={stats.totalMemories}
+        agentActive={stats.agentActive}
       />
 
-      {/* ROW 2: PROACTIVE INTELLIGENCE FEED & MISSION CONTROL (Section 14 & 21) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ZoroIntelligenceFeed
-          userId={userId}
-          onNavigate={onNavigate}
-        />
-        <MissionControlWidget
-          userId={userId}
-          onNavigate={onNavigate}
-          onPlanWithJarvis={() => handleExecuteCommand('Plan with ZORO')}
-        />
-      </div>
-
-      {/* ROW 3: VISION CORE 2.0 & MEMORY CORE 2.0 (Section 16 & 17) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VisionCoreWidget
-          userId={userId}
-          onNavigate={onNavigate}
-        />
-        <MemoryCoreWidget
-          userId={userId}
-          onNavigate={onNavigate}
-        />
-      </div>
-
-      {/* ROW 4: ACTION QUEUE 2.0 & ANALYTICS TELEMETRY CORE (Section 15 & 19) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActionQueueWidget
-          userId={userId}
-          onNavigate={onNavigate}
-        />
-        <AnalyticsCoreWidget
-          userId={userId}
-          onNavigate={onNavigate}
-        />
-      </div>
-
       {/* ---------------------------------------------------- */}
-      {/* 7. CONTEXT SELECTOR MODAL                            */}
+      {/* 6. MAIN MULTI-COLUMN COMMAND MATRIX                  */}
       {/* ---------------------------------------------------- */}
-      {isChangingContext && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-          <div className="w-full max-w-md bg-jarvis-surfaceElevated border border-jarvis-border rounded-lg p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-2 border-b border-jarvis-border/60">
-              <span className="font-bold text-xs text-jarvis-text flex items-center gap-2">
-                <Target className="w-4 h-4 text-jarvis-secondary" />
-                SELECT ACTIVE MISSION CONTEXT
-              </span>
-              <button
-                onClick={() => setIsChangingContext(false)}
-                className="text-jarvis-textMuted hover:text-jarvis-text"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN: 7 COLS (Agents, Projects, Priorities) */}
+        <div className="xl:col-span-7 space-y-6">
+          {/* Active Agent Council (Section 9) */}
+          <AgentCouncil
+            userId={userId}
+            onNavigate={onNavigate}
+          />
 
-            <p className="text-xs text-jarvis-textMuted">
-              Commands like &ldquo;Create a task&rdquo; will automatically associate with this mission.
-            </p>
+          {/* Active Projects Command Center (Section 14) */}
+          <ProjectCommandCenter
+            userId={userId}
+            onNavigate={onNavigate}
+          />
 
-            <div className="space-y-1.5 max-h-60 overflow-y-auto">
-              {MissionService.getMissions(userId).map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => {
-                    CommandRouterService.setActiveMissionContext(userId, { id: m.id, title: m.title });
-                    setActiveMission({ id: m.id, title: m.title });
-                    setIsChangingContext(false);
-                    soundService.play('CLICK');
-                  }}
-                  className={`p-2.5 rounded border cursor-pointer transition-colors flex items-center justify-between text-xs ${
-                    activeMission?.id === m.id
-                      ? 'bg-jarvis-surface border-jarvis-primary text-jarvis-primary'
-                      : 'bg-jarvis-surface/60 border-jarvis-border text-jarvis-textSecondary hover:text-jarvis-text hover:border-jarvis-borderHover'
-                  }`}
-                >
-                  <span className="font-bold truncate max-w-[260px]">{m.title}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-jarvis-bg border border-jarvis-border">
-                    {m.progress}%
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                CommandRouterService.setActiveMissionContext(userId, null);
-                setActiveMission(null);
-                setIsChangingContext(false);
-                soundService.play('CLICK');
-              }}
-              className="w-full py-2 rounded bg-jarvis-surface border border-jarvis-border text-xs text-jarvis-danger hover:bg-jarvis-danger/10"
-            >
-              CLEAR CONTEXT
-            </button>
-          </div>
+          {/* Today's Priority Ranking (Section 11) */}
+          <PriorityPanel
+            userId={userId}
+            onNavigate={onNavigate}
+          />
         </div>
-      )}
+
+        {/* RIGHT COLUMN: 5 COLS (Intelligence Feed, Quick Actions, Mission Control) */}
+        <div className="xl:col-span-5 space-y-6">
+          {/* Live Intelligence Feed (Section 8) */}
+          <IntelligenceFeed
+            userId={userId}
+            onNavigate={onNavigate}
+          />
+
+          {/* Quick Actions (Section 15) */}
+          <QuickActions
+            onNavigate={onNavigate}
+            onOpenDevMode={() => setIsDevConsoleOpen(true)}
+            onOpenVoice={onOpenVoiceHUD || (() => {})}
+            onExecuteCommand={handleExecuteCommand}
+          />
+
+          {/* Mission Control System (Section 10) */}
+          <MissionPanel
+            userId={userId}
+            onNavigate={onNavigate}
+            onPlanWithZoro={() => handleExecuteCommand('Plan with ZORO')}
+          />
+        </div>
+      </div>
 
       {/* ---------------------------------------------------- */}
-      {/* 8. COMMAND ACTION PREVIEW MODAL (GUARDIAN APPROVAL)  */}
+      {/* 7. TELEMETRY & NEURAL MEMORY (Section 12 & 13)       */}
       {/* ---------------------------------------------------- */}
-      {activePreview && (
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* System Telemetry (Browser-Safe Diagnostics) */}
+        <div className="lg:col-span-6">
+          <TelemetryPanel />
+        </div>
+
+        {/* Neural Memory Map */}
+        <div className="lg:col-span-6">
+          <MemoryMap
+            userId={userId}
+            onNavigate={onNavigate}
+          />
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* 8. TALK TO ZORO (First-Class Bottom Voice Assistant) */}
+      {/* ---------------------------------------------------- */}
+      <VoiceAssistant
+        onExecuteCommand={handleExecuteCommand}
+        activeContextTitle={activeMission?.title}
+      />
+
+      {/* ---------------------------------------------------- */}
+      {/* 9. MODALS: SAFETY APPROVAL & DEV CONSOLE             */}
+      {/* ---------------------------------------------------- */}
+      {isPreviewOpen && activePreview && (
         <CommandPreviewModal
-          isOpen={isPreviewOpen}
           preview={activePreview}
-          onApprove={handleApproveAction}
+          isOpen={isPreviewOpen}
+          isExecuting={isApproving}
+          onApprove={() => handleApproveAction(activePreview)}
           onCancel={() => {
             setIsPreviewOpen(false);
             setActivePreview(null);
             setSurfaceState('CANCELLED');
-            soundService.play('CLICK');
           }}
-          isExecuting={isApproving}
+        />
+      )}
+
+      {isDevConsoleOpen && (
+        <DeveloperConsoleModal
+          isOpen={isDevConsoleOpen}
+          onClose={() => setIsDevConsoleOpen(false)}
+          userId={userId}
         />
       )}
     </div>

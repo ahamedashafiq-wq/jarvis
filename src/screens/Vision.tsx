@@ -651,7 +651,7 @@ export const VisionScreen: React.FC<VisionProps> = ({ onNavigate }) => {
                   ))}
                 </select>
                 <p className="text-[9px] text-[#8B9992]">
-                  JARVIS will compare visual elements with real database progress and tasks.
+                  ZORO will compare visual elements with real database progress and tasks.
                 </p>
               </div>
             )}

@@ -36,7 +36,7 @@ export const PlanWithJarvisModal: React.FC<PlanWithJarvisModalProps> = ({
       setPlan(generated);
       setIsEditing(false);
     } catch (err: any) {
-      setError('JARVIS could not generate the plan. Please refine prompt and try again.');
+      setError('ZORO could not generate the plan. Please refine prompt and try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -66,10 +66,10 @@ export const PlanWithJarvisModal: React.FC<PlanWithJarvisModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-[#F5F7F6] tracking-wider uppercase">
-                PLAN WITH JARVIS • BLADE 01 INTELLECT
+                PLAN WITH ZORO • OMNIA COGNITIVE SYNTHESIZER
               </h2>
               <p className="text-[10px] text-[#8B9992]">
-                State your high-level goal. JARVIS synthesizes sequenced objectives.
+                State your high-level goal. ZORO synthesizes sequenced objectives.
               </p>
             </div>
           </div>
@@ -153,7 +153,7 @@ export const PlanWithJarvisModal: React.FC<PlanWithJarvisModalProps> = ({
             <AIOrb state="THINKING" size={110} />
             <div className="space-y-1">
               <div className="text-xs font-bold text-[#19F59A] tracking-widest animate-pulse">
-                JARVIS ANALYZING DIRECTIVE...
+                ZORO ANALYZING DIRECTIVE...
               </div>
               <p className="text-[10px] text-[#8B9992]">
                 Calibrating sequenced objectives across Blade 01 Intellect and Blade 02 Action

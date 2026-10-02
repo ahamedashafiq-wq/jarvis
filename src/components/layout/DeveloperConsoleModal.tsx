@@ -91,7 +91,7 @@ export const DeveloperConsoleModal: React.FC<DeveloperConsoleModalProps> = ({
             <Terminal className="w-4 h-4 text-jarvis-secondary" />
             <div>
               <h2 className="text-sm font-bold text-jarvis-text tracking-wider">
-                JARVIS DEVELOPER CONSOLE & KERNEL TRACE
+                ZORO DEVELOPER CONSOLE & KERNEL TRACE
               </h2>
               <p className="text-[10px] text-jarvis-textMuted">
                 Raw Event Stream, Tool Invocations, Latency & Agent Plan State

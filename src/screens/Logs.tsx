@@ -98,7 +98,7 @@ export const LogsScreen: React.FC<LogsProps> = ({ onNavigate }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl bg-[#0A100D] border border-[#16281F]">
           <div className="text-[10px] text-[#8B9992]">KERNEL CORE</div>
-          <div className="text-sm font-bold text-[#19F59A] mt-0.5">JARVIS ZORO 2.0</div>
+          <div className="text-sm font-bold text-[#19F59A] mt-0.5">ZORO 2.0 OMNIA</div>
           <div className="text-[9px] text-[#00D084] mt-1 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#19F59A] animate-pulse" />
             LIVE TELEMETRY

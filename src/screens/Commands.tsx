@@ -78,7 +78,7 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
         const memoryCount = MemoryService.getMemories(userId).length;
 
         result = `SYSTEM TELEMETRY REPORT:
-• KERNEL: JARVIS ZORO EDITION v2.0
+• KERNEL: ZORO 2.0 OMNIA CORE
 • OPERATOR: ${profile?.display_name || currentSession?.displayName || 'COMMANDER'} (${userId})
 • BACKEND: ${isSupabase ? 'SUPABASE POSTGRESQL [CONNECTED]' : 'LOCAL SANDBOX [ACTIVE]'}
 • BLADE 01 (KNOWLEDGE): GEMINI 3.8 FLASH [ONLINE]
@@ -264,7 +264,7 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
         {/* Output Stream */}
         <div className="space-y-4 overflow-y-auto max-h-[380px] pr-2">
           <div className="text-[#8B9992] text-[11px] pb-2 border-b border-[#16281F]/50">
-            JARVIS ZORO COMMAND CENTER ENVIRONMENT v2.0 (x86_64-pc-linux-gnu)<br />
+            ZORO 2.0 OMNIA COMMAND CENTER ENVIRONMENT (x86_64-pc-linux-gnu)<br />
             Type <span className="text-[#19F59A]">/help</span> for list of directives.
           </div>
 
@@ -272,7 +272,7 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
             <div key={log.id} className="space-y-1.5 font-mono">
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-[#00D084] font-bold">
-                  {profile?.display_name?.toLowerCase() || 'commander'}@jarvis-zoro:~$
+                  {profile?.display_name?.toLowerCase() || 'commander'}@zoro-omnia:~$
                 </span>
                 <span className="text-[#F5F7F6] font-bold">{log.command}</span>
                 <span

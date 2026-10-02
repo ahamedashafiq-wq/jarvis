@@ -4,6 +4,7 @@
 export type SoundEffectType =
   | 'COMMAND_RECEIVED'
   | 'COMMAND_SUCCESS'
+  | 'TASK_COMPLETED'
   | 'WARNING'
   | 'ERROR'
   | 'VOICE_ACTIVATED'
@@ -81,6 +82,7 @@ class SoundService {
           osc.stop(now + 0.1);
           break;
 
+        case 'TASK_COMPLETED':
         case 'COMMAND_SUCCESS':
           osc.type = 'triangle';
           gain.gain.setValueAtTime(0.05, now);

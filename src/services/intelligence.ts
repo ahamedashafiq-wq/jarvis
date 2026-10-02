@@ -846,7 +846,7 @@ Rules:
     const warningSignals = signals.filter((s) => s.severity === 'WARNING');
 
     const lines: string[] = [];
-    lines.push('⚔️ **JARVIS INTELLIGENCE BRIEFING**');
+    lines.push('⚔️ **ZORO OMNIA INTELLIGENCE BRIEFING**');
     lines.push(`• **Active Operations:** ${activeMissions.length} missions in progress.`);
     lines.push(`• **Queue Volume:** ${openTasks.length} pending directives.`);
 

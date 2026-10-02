@@ -135,7 +135,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </h1>
 
             <p className="text-xs text-[#8B9992] max-w-xl leading-relaxed font-sans">
-              JARVIS Zoro Edition is fully armed. Three blades synchronized across Knowledge (Gemini AI), Action Queue, and Persistent Memory. Real-time updates active without manual refresh.
+              ZORO 2.0 OMNIA is fully armed. Three blades synchronized across Knowledge (Gemini AI), Action Queue, and Persistent Memory. Real-time updates active without manual refresh.
             </p>
 
             {/* Quick Prompt Input */}

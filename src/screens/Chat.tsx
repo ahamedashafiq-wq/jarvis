@@ -85,7 +85,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         user_id: userId,
         role: 'assistant',
         content:
-          'JARVIS Zoro Edition online. Three blades aligned. Persistent memory core active. How may I assist your command?',
+          'ZORO 2.0 OMNIA online. Three blades aligned. Persistent memory core active. How may I assist your command, Commander?',
         created_at: Date.now(),
       },
     ])
@@ -211,7 +211,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
           user_id: userId,
           role: 'assistant',
           content:
-            'JARVIS Zoro Edition online. Three blades aligned. Persistent memory core active. How may I assist your command?',
+            'ZORO 2.0 OMNIA online. Three blades aligned. Persistent memory core active. How may I assist your command, Commander?',
           created_at: Date.now(),
         },
       ]);
@@ -499,7 +499,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
       let replyContent = '';
       if (agentResult.status === 'WAITING_FOR_APPROVAL') {
-        replyContent = `⚔️ **JARVIS ACTION PLAN PROPOSED**\n\n**Objective:** ${agentResult.plan.objective}\n\n**Proposed Actions (${agentResult.plan.steps.length}):**\n${agentResult.plan.steps.map((s, i) => `${i + 1}. **${s.tool.toUpperCase()}** — ${s.reason}`).join('\n')}\n\n**Risk Level:** ${agentResult.plan.risk_level}\n\n*Guardian Safety Gate: Operator approval is required before modifying application data. Open the Agent Command Deck to authorize.*`;
+        replyContent = `⚔️ **ZORO ACTION PLAN PROPOSED**\n\n**Objective:** ${agentResult.plan.objective}\n\n**Proposed Actions (${agentResult.plan.steps.length}):**\n${agentResult.plan.steps.map((s, i) => `${i + 1}. **${s.tool.toUpperCase()}** — ${s.reason}`).join('\n')}\n\n**Risk Level:** ${agentResult.plan.risk_level}\n\n*Guardian Safety Gate: Operator approval is required before modifying application data. Open the Agent Command Deck to authorize.*`;
       } else if (agentResult.status === 'COMPLETE') {
         replyContent = `⚔️ **AGENT EXECUTION VERIFIED**\n\n${agentResult.result_summary || 'All actions executed and verified against storage.'}`;
       } else {
@@ -800,7 +800,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
             </div>
             <div>
               <div className="font-bold text-xs text-[#F5F7F6] flex items-center gap-2">
-                <span>JARVIS ZORO INTELLIGENCE</span>
+                <span>ZORO 2.0 OMNIA CORE</span>
                 {activeIntentTag && (
                   <span className="text-[9px] px-2 py-0.5 rounded bg-[#19F59A]/15 text-[#19F59A] border border-[#19F59A]/30">
                     {activeIntentTag}

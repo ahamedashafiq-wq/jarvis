@@ -13,7 +13,7 @@ export const MODULE_METADATA: Record<
   WindowModuleType,
   { title: string; defaultSize: { width: number; height: number }; icon: string }
 > = {
-  COMMAND: { title: 'JARVIS Command Surface', defaultSize: { width: 780, height: 560 }, icon: 'Command' },
+  COMMAND: { title: 'ZORO Command Surface', defaultSize: { width: 780, height: 560 }, icon: 'Command' },
   MISSIONS: { title: 'Mission Control OS', defaultSize: { width: 840, height: 600 }, icon: 'Target' },
   TASKS: { title: 'Action Queue (Tasks)', defaultSize: { width: 680, height: 520 }, icon: 'CheckSquare' },
   MEMORY: { title: 'Neural Memory Bank', defaultSize: { width: 720, height: 540 }, icon: 'Database' },
@@ -57,7 +57,7 @@ export class WorkspaceManager {
           {
             id: 'win_cmd_' + now,
             type: 'COMMAND',
-            title: 'JARVIS Command Surface',
+            title: 'ZORO Command Surface',
             position: { x: 30, y: 25 },
             size: { width: 800, height: 580 },
             zIndex: 10,
@@ -124,7 +124,7 @@ export class WorkspaceManager {
           {
             id: 'win_dev_cmd_' + now,
             type: 'COMMAND',
-            title: 'JARVIS Command Surface',
+            title: 'ZORO Command Surface',
             position: { x: 640, y: 460 },
             size: { width: 600, height: 400 },
             zIndex: 7,

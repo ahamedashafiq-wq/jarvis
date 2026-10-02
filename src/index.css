@@ -4,34 +4,36 @@
 
 :root {
   --zoro-bg: #050A12;
+  --zoro-canvas: #03070D;
   --zoro-panel: #08121F;
   --zoro-panel-elevated: #0B1624;
   --zoro-panel-highlight: #0E1D2D;
-  --zoro-border: rgba(25, 217, 255, 0.12);
-  --zoro-border-hover: rgba(25, 217, 255, 0.28);
+  --zoro-border: rgba(25, 217, 255, 0.14);
+  --zoro-border-hover: rgba(25, 217, 255, 0.32);
   --zoro-cyan: #19D9FF;
   --zoro-blue: #3D7CFF;
   --zoro-violet: #8B5CFF;
   --zoro-success: #21E6A0;
   --zoro-warning: #FFB020;
   --zoro-critical: #FF4D67;
-  --zoro-text: #F0F6FC;
+  --zoro-text: #EAF8FF;
   --zoro-text-secondary: #8FA4BE;
-  --zoro-muted: #4E6581;
+  --zoro-muted: #7890A8;
 
   --jarvis-bg: #050A12;
+  --jarvis-canvas: #03070D;
   --jarvis-surface: #08121F;
   --jarvis-surface-elevated: #0B1624;
-  --jarvis-border: rgba(25, 217, 255, 0.12);
+  --jarvis-border: rgba(25, 217, 255, 0.14);
   --jarvis-primary: #19D9FF;
   --jarvis-secondary: #3D7CFF;
   --jarvis-accent: #8B5CFF;
   --jarvis-warning: #FFB020;
   --jarvis-danger: #FF4D67;
   --jarvis-success: #21E6A0;
-  --jarvis-text: #F0F6FC;
+  --jarvis-text: #EAF8FF;
   --jarvis-text-secondary: #8FA4BE;
-  --jarvis-muted: #4E6581;
+  --jarvis-muted: #7890A8;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;

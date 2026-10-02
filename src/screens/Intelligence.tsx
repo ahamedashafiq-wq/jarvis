@@ -222,7 +222,7 @@ export const IntelligenceScreen: React.FC<IntelligenceProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-black text-[#F5F7F6] tracking-wider">
-                  JARVIS PREDICTIVE INTELLIGENCE CORE
+                  ZORO PREDICTIVE INTELLIGENCE CORE
                 </h1>
                 <span className="text-[9px] px-2 py-0.5 rounded bg-[#00D084]/20 text-[#19F59A] font-bold border border-[#00D084]/40">
                   PHASE 12

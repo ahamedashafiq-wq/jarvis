@@ -13,7 +13,7 @@ import {
   Layers,
   Terminal,
 } from 'lucide-react';
-import { RoutePath } from '../../types';
+import { RoutePath, CommandSurfaceState } from '../../types';
 import { soundService } from '../../services/sound';
 import { VoiceEngine, VoiceEngineState } from '../../services/voiceEngine';
 
@@ -21,7 +21,7 @@ interface ZoroHeroAICoreProps {
   onNavigate: (path: RoutePath) => void;
   onExecuteCommand: (command: string) => void;
   onOpenVoice: () => void;
-  systemState?: 'IDLE' | 'LISTENING' | 'THINKING' | 'PLANNING' | 'EXECUTING' | 'VERIFYING' | 'COMPLETED' | 'ERROR';
+  systemState?: CommandSurfaceState | 'COMPLETED';
   activeMissionCount?: number;
   totalTaskCount?: number;
   memoryNodeCount?: number;
@@ -103,6 +103,7 @@ export const ZoroHeroAICore: React.FC<ZoroHeroAICoreProps> = ({
           border: 'border-zoro-critical',
           ringSpeed: 'animate-[spin_10s_linear_infinite]',
         };
+      case 'COMPLETE':
       case 'COMPLETED':
         return {
           label: 'ACTION VERIFIED',

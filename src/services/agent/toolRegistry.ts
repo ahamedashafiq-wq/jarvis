@@ -1052,7 +1052,7 @@ class ToolRegistryService {
     // ----------------------------------------------------
     this.register({
       name: 'navigation.go',
-      description: 'Navigate to an authorized JARVIS OS module route.',
+      description: 'Navigate to an authorized ZORO OS module route.',
       permission: 'system.read',
       risk: 'SAFE',
       requiresConfirmation: false,
@@ -1079,7 +1079,7 @@ class ToolRegistryService {
     // ----------------------------------------------------
     this.register({
       name: 'workspace.list',
-      description: 'List all configured JARVIS OS workspaces and window layouts.',
+      description: 'List all configured ZORO OS workspaces and window layouts.',
       permission: 'system.read',
       risk: 'SAFE',
       requiresConfirmation: false,
@@ -1101,7 +1101,7 @@ class ToolRegistryService {
 
     this.register({
       name: 'workspace.switch',
-      description: 'Switch active JARVIS OS workspace preset.',
+      description: 'Switch active ZORO OS workspace preset.',
       permission: 'system.write',
       risk: 'SAFE',
       requiresConfirmation: false,

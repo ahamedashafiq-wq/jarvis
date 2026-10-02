@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RoutePath } from '../../types';
-import { ZoroHeader } from '../zoro/ZoroHeader';
+import { SystemStatus } from '../zoro/SystemStatus';
 import { ZoroSidebar } from '../zoro/ZoroSidebar';
 import { ZoroIntelligencePanel } from '../zoro/ZoroIntelligencePanel';
 import { ZoroVoiceCommandBar } from '../zoro/ZoroVoiceCommandBar';
@@ -48,11 +48,10 @@ export const AppShell: React.FC<AppShellProps> = ({
 }) => {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isIntelligencePanelOpen, setIsIntelligencePanelOpen] = useState(true);
   const [isSystemHealthOpen, setIsSystemHealthOpen] = useState(false);
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
 
-  // Shortcut Ctrl + B to toggle sidebar collapsed state (Section 5)
+  // Shortcut Ctrl + B to toggle sidebar collapsed state
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const isInput = ['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName);
@@ -67,9 +66,9 @@ export const AppShell: React.FC<AppShellProps> = ({
   }, []);
 
   return (
-    <div className="min-h-screen bg-zoro-bg text-zoro-text flex flex-col font-sans selection:bg-zoro-cyan/20 selection:text-zoro-cyan">
-      {/* 1. Global Top Command Bar (Section 6) */}
-      <ZoroHeader
+    <div className="min-h-screen bg-[#03070D] text-zoro-text flex flex-col font-sans selection:bg-zoro-cyan/20 selection:text-zoro-cyan">
+      {/* 1. Global Top System Bar (Section 3) */}
+      <SystemStatus
         currentPath={currentPath}
         onNavigate={onNavigate}
         onOpenSearch={() => {
@@ -79,20 +78,17 @@ export const AppShell: React.FC<AppShellProps> = ({
             onExecuteCommand('');
           }
         }}
-        operatorName="COMMANDER"
-        onToggleMobileNav={() => setIsMobileNavOpen((prev) => !prev)}
-        onToggleSidebarCollapsed={() => setIsSidebarCollapsed((prev) => !prev)}
-        isSidebarCollapsed={isSidebarCollapsed}
-        onToggleIntelligencePanel={() => setIsIntelligencePanelOpen((prev) => !prev)}
-        isIntelligencePanelOpen={isIntelligencePanelOpen}
         onOpenSystemHealth={() => setIsSystemHealthOpen(true)}
         onOpenDevConsole={() => setIsDevConsoleOpen(true)}
-        activeMissionTitle={activeMissionTitle}
+        onToggleMobileNav={() => setIsMobileNavOpen((prev) => !prev)}
+        operatorName="COMMANDER"
+        systemId="OMNIA-OS-01"
+        agentActive={badges.agentActive}
       />
 
-      {/* 2. Structured Global 3-Column Layout: Left Sidebar + Main Content + Right Intelligence Panel */}
+      {/* 2. Structured Layout: Left Sidebar + Main Content */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* LEFT SIDEBAR: Collapsible Navigation Rail (Section 5) */}
+        {/* LEFT SIDEBAR: Collapsible Navigation Rail (Section 3) */}
         <ZoroSidebar
           currentPath={currentPath}
           onNavigate={onNavigate}
@@ -111,32 +107,22 @@ export const AppShell: React.FC<AppShellProps> = ({
           />
         )}
 
-        {/* MAIN CONTENT WORKSPACE: Flexible 8–9 columns */}
+        {/* MAIN CONTENT WORKSPACE */}
         <main className="flex-1 overflow-y-auto pb-24 md:pb-28">
           <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-7 space-y-6">
             {children}
           </div>
         </main>
-
-        {/* RIGHT INTELLIGENCE PANEL: Tactical Telemetry & Stream */}
-        {isIntelligencePanelOpen && (
-          <div className="hidden xl:flex">
-            <ZoroIntelligencePanel
-              userId={userId}
-              onNavigate={onNavigate}
-              onOpenVoiceHUD={onOpenVoiceHUD}
-              onExecuteCommand={onExecuteCommand}
-            />
-          </div>
-        )}
       </div>
 
-      {/* 3. Persistent Voice Command Bar (Section 8) */}
-      <ZoroVoiceCommandBar
-        onExecuteCommand={onExecuteCommand}
-        isProcessing={isExecuting}
-        activeContextTitle={activeMissionTitle}
-      />
+      {/* 3. Persistent Voice Command Bar on secondary screens */}
+      {currentPath !== '/command' && currentPath !== '/commands' && currentPath !== '/' && (
+        <ZoroVoiceCommandBar
+          onExecuteCommand={onExecuteCommand}
+          isProcessing={isExecuting}
+          activeContextTitle={activeMissionTitle}
+        />
+      )}
 
       {/* Global Voice HUD Modal (Ctrl + Space) */}
       <GlobalVoiceHUD

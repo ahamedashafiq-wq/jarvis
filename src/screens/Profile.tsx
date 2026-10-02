@@ -67,7 +67,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       <div className="p-6 rounded-2xl bg-[#0A100D] border border-[#16281F] relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="w-20 h-20 rounded-2xl bg-[#121C17] border-2 border-[#00D084] flex items-center justify-center text-xl font-black text-[#19F59A] shrink-0 overflow-hidden shadow-[0_0_20px_rgba(0,208,132,0.3)]">
-            <img src="/jarvis-zoro.jpg" alt="Operator Avatar" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+            <img src="/jarvis-zoro.jpg" alt="Commander Avatar" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
             <Shield className="w-10 h-10 text-[#19F59A] shrink-0" />
           </div>
 

@@ -53,7 +53,7 @@ export const ZoroThinkingPipeline: React.FC<ZoroThinkingPipelineProps> = ({
       return 'FAILED';
     }
 
-    if (surfaceState === 'SUCCESS') {
+    if (surfaceState === 'COMPLETE') {
       return 'COMPLETED';
     }
 

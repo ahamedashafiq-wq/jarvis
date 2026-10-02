@@ -179,7 +179,7 @@ export const SystemHealthModal: React.FC<SystemHealthModalProps> = ({
             <Activity className="w-4 h-4 text-jarvis-primary animate-pulse" />
             <div>
               <h2 className="text-sm font-bold text-jarvis-text tracking-wider">
-                JARVIS OS 2.0 • SYSTEM HEALTH CENTER
+                ZORO 2.0 OMNIA • SYSTEM HEALTH CENTER
               </h2>
               <p className="text-[10px] text-jarvis-textMuted">
                 Real-time Subsystem Diagnostics & Status Validation

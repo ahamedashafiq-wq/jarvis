@@ -191,7 +191,7 @@ export const GlobalCommandDock: React.FC<GlobalCommandDockProps> = ({
               value={commandText}
               onChange={(e) => setCommandText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="JARVIS OS Universal Command... (e.g. 'Show active missions', 'Create task', or Ctrl+K)"
+              placeholder="ZORO OS Universal Command... (e.g. 'Show active missions', 'Create task', or Ctrl+K)"
               className="w-full resize-none py-2 px-3 rounded border border-jarvis-border bg-jarvis-surface text-jarvis-text placeholder:text-jarvis-textMuted text-xs font-mono focus:border-jarvis-primary/60 focus:bg-jarvis-surfaceElevated transition-all focus:outline-none"
               id="dock-universal-command-input"
               name="universalCommand"

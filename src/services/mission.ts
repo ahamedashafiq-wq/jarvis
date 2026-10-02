@@ -601,7 +601,7 @@ export class MissionService {
     // 1. Try Gemini generation if configured
     if (ai && isGeminiConfigured) {
       try {
-        const systemPrompt = `You are JARVIS Zoro Edition Tactical Planner.
+        const systemPrompt = `You are ZORO 2.0 OMNIA Tactical Planner. Address the operator as Commander.
 Given the user's high-level goal, formulate a structured tactical mission with 4 to 8 sequenced objectives.
 Each objective must have 2 to 4 concrete actionable tasks.
 Ensure objectives represent a complete operational hierarchy:
@@ -758,7 +758,7 @@ Return clean, strictly valid JSON conforming to the requested schema.`;
     return {
       title: cleanTitle.toUpperCase(),
       goal: `Execute ${cleanTitle} with discipline and structured phases.`,
-      description: `Structured operational roadmap synthesized by JARVIS Zoro Edition.`,
+      description: `Structured operational roadmap synthesized by ZORO 2.0 OMNIA.`,
       priority,
       category,
       deadline: 'In 2 Weeks',

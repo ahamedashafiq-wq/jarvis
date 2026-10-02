@@ -49,7 +49,7 @@ export class WindowErrorBoundary extends Component<Props, State> {
               {this.state.errorMessage}
             </p>
             <p className="text-[10px] text-[#8B9992]/60">
-              JARVIS OS isolated this failure. All other active workspaces and modules remain nominal.
+              ZORO OS isolated this failure. All other active workspaces and modules remain nominal.
             </p>
           </div>
 

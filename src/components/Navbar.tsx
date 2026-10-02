@@ -144,20 +144,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="font-extrabold text-sm tracking-wider text-[#F5F7F6]">JARVIS</span>
+            <span className="font-extrabold text-sm tracking-wider text-[#F5F7F6]">ZORO</span>
             <span className="text-[10px] font-mono font-bold text-[#19F59A] px-1 rounded bg-[#00D084]/10 border border-[#00D084]/20">
-              ZORO EDITION
+              2.0 OMNIA
             </span>
           </div>
           <div className="text-[8px] font-mono text-[#8B9992] tracking-widest hidden sm:block">
-            THREE BLADES. ONE INTELLIGENCE.
+            PERSONAL AI COMMAND OS
           </div>
         </div>
       </div>
 
       {/* Telemetry and Controls */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Toggle JARVIS OS Workspace */}
+        {/* Toggle ZORO OS Workspace */}
         <button
           onClick={() => onNavigate(currentPath === '/os' || currentPath === '/workspace' ? '/command' : '/os')}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all shadow-sm ${
@@ -165,11 +165,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               ? 'bg-[#121C17] border-[#38E1FF] text-[#38E1FF] shadow-[0_0_10px_rgba(56,225,255,0.2)] font-bold'
               : 'border-[#16281F] bg-[#050706] text-[#8B9992] hover:text-[#38E1FF] hover:border-[#38E1FF]/40'
           }`}
-          title="Toggle JARVIS OS Workspace"
+          title="Toggle ZORO OS Workspace"
         >
           <Monitor className="w-3.5 h-3.5 text-[#38E1FF]" />
           <span className="hidden sm:inline text-[11px]">
-            {currentPath === '/os' || currentPath === '/workspace' ? 'EXIT OS' : 'JARVIS OS'}
+            {currentPath === '/os' || currentPath === '/workspace' ? 'EXIT OS' : 'ZORO OS'}
           </span>
         </button>
 

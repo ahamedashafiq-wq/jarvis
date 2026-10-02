@@ -81,7 +81,7 @@ export const MemoryCoreWidget: React.FC<MemoryCoreWidgetProps> = ({
           <Database className="w-4 h-4 text-jarvis-accent" />
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-jarvis-text tracking-wider">
-              JARVIS MEMORY CORE 2.0 (BLADE 03)
+              ZORO MEMORY CORE 2.0 (BLADE 03)
             </h2>
             <p className="text-[10px] text-jarvis-textMuted">SANDAI KITETSU PERSISTENT KNOWLEDGE MATRIX</p>
           </div>

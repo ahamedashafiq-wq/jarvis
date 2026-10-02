@@ -54,7 +54,7 @@ export const CommandPreviewModal: React.FC<CommandPreviewModalProps> = ({
             </div>
             <div>
               <div className="text-[10px] text-[#8B9992] tracking-wider uppercase">
-                JARVIS ACTION AUTHORIZATION
+                ZORO ACTION AUTHORIZATION
               </div>
               <h2 className="text-sm sm:text-base font-black text-[#F5F7F6]">
                 {preview.title}

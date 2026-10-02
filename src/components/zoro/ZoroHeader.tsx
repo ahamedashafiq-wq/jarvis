@@ -55,7 +55,7 @@ export const ZoroHeader: React.FC<ZoroHeaderProps> = ({
 }) => {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
-  const isSupabase = isSupabaseConfigured();
+  const isSupabase = isSupabaseConfigured;
 
   useEffect(() => {
     const updateDateTime = () => {

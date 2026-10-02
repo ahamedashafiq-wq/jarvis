@@ -330,12 +330,12 @@ export const GlobalVoiceHUD: React.FC<GlobalVoiceHUDProps> = ({
 
           <div className="text-center space-y-1">
             <div className="text-xs font-bold text-[#F5F7F6] tracking-wider">
-              {voiceState === 'IDLE' && 'JARVIS CORE: READY'}
-              {voiceState === 'LISTENING' && 'JARVIS CORE: LISTENING...'}
-              {voiceState === 'PROCESSING' && 'JARVIS CORE: UNDERSTANDING DIRECTIVE...'}
-              {voiceState === 'EXECUTING' && 'JARVIS CORE: EXECUTING APPLICATION ACTION...'}
-              {voiceState === 'SPEAKING' && 'JARVIS CORE: RESPONDING...'}
-              {voiceState === 'ERROR' && 'JARVIS CORE: ERROR ENCOUNTERED'}
+              {voiceState === 'IDLE' && 'ZORO OMNIA CORE: READY'}
+              {voiceState === 'LISTENING' && 'ZORO OMNIA CORE: LISTENING...'}
+              {voiceState === 'PROCESSING' && 'ZORO OMNIA CORE: UNDERSTANDING DIRECTIVE...'}
+              {voiceState === 'EXECUTING' && 'ZORO OMNIA CORE: EXECUTING APPLICATION ACTION...'}
+              {voiceState === 'SPEAKING' && 'ZORO OMNIA CORE: RESPONDING...'}
+              {voiceState === 'ERROR' && 'ZORO OMNIA CORE: ERROR ENCOUNTERED'}
             </div>
             <div className="text-[10px] text-[#8B9992]">
               SHORTCUT: <kbd className="px-1.5 py-0.5 rounded bg-[#050706] border border-[#16281F] text-[#19F59A]">CTRL + SPACE</kbd>
@@ -381,7 +381,7 @@ export const GlobalVoiceHUD: React.FC<GlobalVoiceHUDProps> = ({
 
               {response && (
                 <div className="space-y-0.5">
-                  <span className="text-[9px] font-bold text-[#38E1FF]">JARVIS RESPONSE:</span>
+                  <span className="text-[9px] font-bold text-[#38E1FF]">ZORO RESPONSE:</span>
                   <p className="font-sans text-xs text-[#F5F7F6] bg-[#121C17] p-2.5 rounded border border-[#00D084]/20 leading-relaxed whitespace-pre-wrap max-h-36 overflow-y-auto">
                     {response}
                   </p>

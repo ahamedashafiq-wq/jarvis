@@ -80,7 +80,7 @@ const SEED_ENTITIES = (userId: string): KnowledgeEntity[] => [
     user_id: userId,
     entity_type: 'PERSON',
     name: 'Commander',
-    description: 'Primary human commander and tactical authority for JARVIS Zoro system.',
+    description: 'Primary human commander and tactical authority for ZORO OMNIA system.',
     metadata: {
       role: 'OPERATOR',
       rank: 'SUPREME_COMMANDER',

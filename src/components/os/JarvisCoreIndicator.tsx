@@ -32,11 +32,11 @@ export const JarvisCoreIndicator: React.FC<JarvisCoreIndicatorProps> = ({
     <div
       onClick={onClick}
       className={`flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#050706] border cursor-pointer select-none transition-all font-mono text-[10px] ${getColor()}`}
-      title={`JARVIS Core State: ${state}`}
+      title={`ZORO Core State: ${state}`}
     >
       <span className="text-xs">◈</span>
       <div className="flex flex-col text-left leading-tight">
-        <span className="text-[8px] text-[#8B9992] tracking-widest font-bold">JARVIS CORE</span>
+        <span className="text-[8px] text-[#8B9992] tracking-widest font-bold">ZORO CORE</span>
         <span className="font-bold">{state}</span>
       </div>
     </div>

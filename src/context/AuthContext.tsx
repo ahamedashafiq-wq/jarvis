@@ -224,7 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Local authentication fallback for instant sandbox access
     const users = getLocalStore<Record<string, any>>('users', {});
-    const cleanEmail = email.toLowerCase().trim() || 'commander@jarvis.ai';
+    const cleanEmail = email.toLowerCase().trim() || 'commander@zoro.omnia';
     const existing = users[cleanEmail];
     const userId = existing?.id || 'op_' + Math.random().toString(36).substring(2, 9);
     const displayName = existing?.displayName || cleanEmail.split('@')[0].toUpperCase();

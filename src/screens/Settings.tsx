@@ -226,7 +226,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 <div className="p-3 rounded-xl bg-[#050706] border border-[#16281F] space-y-1">
                   <span className="text-[10px] text-[#8B9992] block">PRIMARY EMAIL</span>
                   <span className="text-xs font-bold text-[#38E1FF]">
-                    {currentSession?.email || 'operator@jarvis.local'}
+                    {currentSession?.email || 'commander@zoro.omnia'}
                   </span>
                 </div>
 
@@ -537,7 +537,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             <div className="p-5 rounded-2xl bg-[#0A100D] border border-[#16281F] space-y-4">
               <h2 className="text-xs font-bold tracking-wider text-[#F5F7F6] flex items-center gap-2">
                 <Monitor className="w-4 h-4 text-[#38E1FF]" />
-                <span>JARVIS OS WORKSPACE & WINDOW MANAGER</span>
+                <span>ZORO OS WORKSPACE & WINDOW MANAGER</span>
               </h2>
 
               <div className="space-y-3">

@@ -491,7 +491,7 @@ export const Missions: React.FC<MissionsProps> = ({ onNavigate, initialMissionId
         <div className="p-4 sm:p-5 rounded-xl bg-[#121C17]/60 border border-[#00D084]/30 space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-[#19F59A] tracking-wider">
             <Shield className="w-4 h-4" />
-            <span>JARVIS MISSION BRIEFING</span>
+            <span>ZORO MISSION BRIEFING</span>
           </div>
           <p className="text-xs text-[#F5F7F6] leading-relaxed font-sans">
             {selectedMission.title} is currently at{' '}
@@ -1272,7 +1272,7 @@ export const Missions: React.FC<MissionsProps> = ({ onNavigate, initialMissionId
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#19F59A] text-[#050706] font-bold text-xs hover:bg-[#00D084] transition-all shadow-[0_0_15px_rgba(25,245,154,0.3)]"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>PLAN WITH JARVIS</span>
+            <span>PLAN WITH ZORO</span>
           </button>
 
           <button
@@ -1397,7 +1397,7 @@ export const Missions: React.FC<MissionsProps> = ({ onNavigate, initialMissionId
             <Target className="w-8 h-8 text-[#19F59A] mx-auto opacity-40" />
             <div className="font-bold text-sm text-[#F5F7F6]">No missions in operational queue.</div>
             <p className="text-xs font-sans max-w-sm mx-auto">
-              Initiate a roadmap by clicking "PLAN WITH JARVIS" or create a custom tactical mission.
+              Initiate a roadmap by clicking "PLAN WITH ZORO" or create a custom tactical mission.
             </p>
           </div>
         ) : (

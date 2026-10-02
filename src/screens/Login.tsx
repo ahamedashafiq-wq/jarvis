@@ -32,11 +32,11 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   };
 
   const handleDemoLogin = async () => {
-    setEmail('commander@jarvis.ai');
+    setEmail('commander@zoro.omnia');
     setPassword('SantoryuMaster2026!');
     setError('');
     setLoading(true);
-    await login('commander@jarvis.ai', 'SantoryuMaster2026!');
+    await login('commander@zoro.omnia', 'SantoryuMaster2026!');
     setLoading(false);
   };
 
@@ -50,11 +50,11 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-center gap-2">
               <Shield className="w-5 h-5 text-[#19F59A]" />
               <h1 className="text-xl font-black tracking-widest text-[#F5F7F6]">
-                ZORO 2.0 — COMMAND CENTER
+                ZORO 2.0 OMNIA — COMMAND CENTER
               </h1>
             </div>
             <p className="text-[10px] text-[#8B9992] tracking-widest">
-              THREE BLADES. ONE INTELLIGENCE.
+              PERSONAL AI COMMAND OPERATING SYSTEM
             </p>
           </div>
         </div>
@@ -62,7 +62,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         {/* Login Box */}
         <div className="bg-[#0A100D] border border-[#16281F] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
           <div className="flex items-center justify-between border-b border-[#16281F] pb-3 text-xs">
-            <span className="font-bold text-[#19F59A] tracking-wider">OPERATOR AUTHENTICATION</span>
+            <span className="font-bold text-[#19F59A] tracking-wider">COMMANDER AUTHENTICATION</span>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
               isSupabase ? 'bg-[#38E1FF]/10 text-[#38E1FF]' : 'bg-[#FFB000]/10 text-[#FFB000]'
             }`}>
@@ -78,7 +78,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label htmlFor="login-email" className="text-[10px] text-jarvis-textMuted block mb-1">OPERATOR EMAIL</label>
+              <label htmlFor="login-email" className="text-[10px] text-jarvis-textMuted block mb-1">COMMANDER EMAIL</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -86,7 +86,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
                   name="email"
                   type="email"
                   required
-                  placeholder="commander@jarvis.ai"
+                  placeholder="commander@zoro.omnia"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-3 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"

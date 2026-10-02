@@ -197,14 +197,14 @@ export const App: React.FC = () => {
   // 1. Loading Authentication State
   if (authState === 'AUTHENTICATING' && !currentSession) {
     return (
-      <div className="min-h-screen bg-jarvis-bg flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#03070D] flex flex-col items-center justify-center p-4">
         <AIOrb state="THINKING" size={130} />
         <div className="mt-6 text-center space-y-2 font-mono">
-          <div className="text-sm font-bold text-jarvis-primary tracking-widest animate-pulse">
+          <div className="text-sm font-bold text-zoro-cyan tracking-widest animate-pulse">
             AUTHENTICATING SESSION...
           </div>
-          <p className="text-xs text-jarvis-textMuted uppercase tracking-wider">
-            CALIBRATING THREE BLADES MATRIX
+          <p className="text-xs text-zoro-textMuted uppercase tracking-wider">
+            CALIBRATING ZORO 2.0 OMNIA MATRIX
           </p>
         </div>
       </div>

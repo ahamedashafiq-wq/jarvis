@@ -90,7 +90,7 @@ class VoiceEngineClass {
       },
     });
 
-    return started;
+    return true;
   }
 
   public stop(): void {

@@ -20,6 +20,8 @@ import {
   Activity,
   Mic,
   Plug,
+  FolderGit2,
+  Crosshair,
 } from 'lucide-react';
 import { RoutePath } from '../../types';
 import { soundService } from '../../services/sound';
@@ -63,84 +65,90 @@ export const ZoroSidebar: React.FC<ZoroSidebarProps> = ({
   const navItems: NavItem[] = [
     {
       id: 'cmd_center',
-      label: 'Command Center',
+      label: 'COMMAND CENTER',
       path: '/command',
       icon: Terminal,
     },
     {
       id: 'zoro_core',
-      label: 'Zoro Core',
+      label: 'ZORO CORE',
       path: '/intelligence',
       icon: Cpu,
     },
     {
       id: 'missions',
-      label: 'Missions',
+      label: 'MISSIONS',
       path: '/missions',
       icon: Target,
       badge: badges.missionsCount,
     },
     {
       id: 'tasks',
-      label: 'Tasks',
+      label: 'TASKS',
       path: '/tasks',
       icon: CheckSquare,
       badge: badges.tasksCount,
     },
     {
+      id: 'projects',
+      label: 'PROJECTS',
+      path: '/missions',
+      icon: FolderGit2,
+    },
+    {
       id: 'agents',
-      label: 'Agents',
+      label: 'AGENTS',
       path: '/agents',
       icon: Bot,
       badge: badges.agentActive ? 'LIVE' : undefined,
     },
     {
-      id: 'voice',
-      label: 'Voice',
-      path: '/voice',
-      icon: Mic,
-    },
-    {
-      id: 'vision',
-      label: 'Vision',
-      path: '/vision',
-      icon: Eye,
-    },
-    {
       id: 'memory',
-      label: 'Memory',
+      label: 'MEMORY',
       path: '/memory',
       icon: Database,
       badge: badges.memoriesCount,
     },
     {
+      id: 'vision',
+      label: 'VISION',
+      path: '/vision',
+      icon: Eye,
+    },
+    {
       id: 'knowledge',
-      label: 'Knowledge',
+      label: 'KNOWLEDGE',
       path: '/knowledge',
       icon: BookOpen,
     },
     {
       id: 'workflows',
-      label: 'Workflows',
+      label: 'WORKFLOWS',
       path: '/automation',
       icon: Workflow,
       badge: badges.automationsCount,
     },
     {
+      id: 'focus',
+      label: 'FOCUS',
+      path: '/focus',
+      icon: Crosshair,
+    },
+    {
       id: 'analytics',
-      label: 'Analytics',
+      label: 'ANALYTICS',
       path: '/analytics',
       icon: TrendingUp,
     },
     {
       id: 'integrations',
-      label: 'Integrations',
+      label: 'INTEGRATIONS',
       path: '/settings',
       icon: Plug,
     },
     {
       id: 'settings',
-      label: 'Settings',
+      label: 'SETTINGS',
       path: '/settings',
       icon: SettingsIcon,
     },
@@ -280,7 +288,7 @@ export const ZoroSidebar: React.FC<ZoroSidebarProps> = ({
             <div className="flex items-center justify-between">
               <span>SYNAPSE</span>
               <span className="text-zoro-text font-semibold">
-                {isSupabaseConfigured() ? 'SUPABASE' : 'SANDBOX'}
+                {isSupabaseConfigured ? 'SUPABASE' : 'SANDBOX'}
               </span>
             </div>
             <div className="flex items-center justify-between">

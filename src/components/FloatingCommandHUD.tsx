@@ -118,7 +118,7 @@ export const FloatingCommandHUD: React.FC<FloatingCommandHUDProps> = ({
           <div className="flex items-center justify-between pb-2 border-b border-[#16281F]/60 text-xs">
             <div className="flex items-center gap-1.5 text-[#19F59A] font-bold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>JARVIS COMMAND HUD</span>
+              <span>ZORO COMMAND HUD</span>
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -145,7 +145,7 @@ export const FloatingCommandHUD: React.FC<FloatingCommandHUDProps> = ({
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Ask JARVIS anything..."
+              placeholder="Ask ZORO anything..."
               className="w-full bg-[#050706] p-2.5 rounded-xl border border-[#16281F] text-xs text-[#F5F7F6] outline-none placeholder-[#8B9992]/60 focus:border-[#00D084]/60 font-mono"
             />
 

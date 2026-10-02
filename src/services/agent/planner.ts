@@ -85,7 +85,7 @@ export class AgentPlanner {
         memories: context.memories,
       });
 
-      const prompt = `You are the PLANNER specialist for JARVIS Zoro Edition AI Agent Core.
+      const prompt = `You are the PLANNER specialist for ZORO 2.0 OMNIA AI Agent Core.
 Break this user request into a safe, sequential execution plan consisting ONLY of allowlisted tools.
 
 ALLOWLISTED TOOLS:

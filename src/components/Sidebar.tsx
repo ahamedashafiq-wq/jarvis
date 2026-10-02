@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate }) => 
           >
             <div className="flex items-center gap-2.5">
               <Monitor className="w-3.5 h-3.5 text-[#38E1FF]" />
-              <span className="tracking-wide">JARVIS OS 1.0</span>
+              <span className="tracking-wide">ZORO OS 2.0</span>
             </div>
             <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-[#38E1FF]/20 text-[#38E1FF]">
               WORKSPACE

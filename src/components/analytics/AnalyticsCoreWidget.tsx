@@ -80,7 +80,7 @@ export const AnalyticsCoreWidget: React.FC<AnalyticsCoreWidgetProps> = ({
           <TrendingUp className="w-4 h-4 text-jarvis-primary" />
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-jarvis-text tracking-wider">
-              JARVIS ANALYTICS & SYSTEM TELEMETRY
+              ZORO ANALYTICS & SYSTEM TELEMETRY
             </h2>
             <p className="text-[10px] text-jarvis-textMuted">EMPIRICAL OPERATIONAL VERIFICATION</p>
           </div>

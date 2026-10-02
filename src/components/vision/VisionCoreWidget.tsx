@@ -103,7 +103,7 @@ export const VisionCoreWidget: React.FC<VisionCoreWidgetProps> = ({
           <Eye className="w-4 h-4 text-jarvis-secondary animate-pulse" />
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-jarvis-text tracking-wider">
-              JARVIS VISION CORE 2.0
+              ZORO VISION CORE 2.0
             </h2>
             <p className="text-[10px] text-jarvis-textMuted">THREE-STAGE INGEST • UNDERSTAND • ACT</p>
           </div>

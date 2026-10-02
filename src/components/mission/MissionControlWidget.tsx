@@ -108,7 +108,7 @@ export const MissionControlWidget: React.FC<MissionControlWidgetProps> = ({
               className="px-2.5 py-1 rounded text-xs border border-jarvis-secondary/60 bg-jarvis-secondary/10 hover:bg-jarvis-secondary/20 text-jarvis-secondary flex items-center gap-1 transition-colors"
             >
               <Sparkles className="w-3 h-3" />
-              <span>PLAN WITH JARVIS</span>
+              <span>PLAN WITH ZORO</span>
             </button>
           )}
 

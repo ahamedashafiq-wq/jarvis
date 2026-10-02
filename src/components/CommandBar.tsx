@@ -29,7 +29,7 @@ export const CommandBar: React.FC<CommandBarProps> = ({
   activeMissionContext,
   onChangeContext,
   onClearContext,
-  placeholder = 'Ask JARVIS anything...',
+  placeholder = 'Ask ZORO anything...',
   isProcessing = false,
   className = '',
   autoFocus = false,

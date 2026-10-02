@@ -167,6 +167,22 @@ class SpeechService {
     return this.isListening;
   }
 
+  public isCurrentlyListening(): boolean {
+    return this.isListening;
+  }
+
+  public getByteFrequencyData(dataArray: Uint8Array): boolean {
+    if (!this.analyser) {
+      return false;
+    }
+    try {
+      this.analyser.getByteFrequencyData(dataArray as any);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   public isSpeaking(): boolean {
     return Boolean(this.synth?.speaking);
   }
@@ -306,8 +322,8 @@ class SpeechService {
     pitch = 1.0,
     volume = 1.0,
     onEnd?: () => void
-  ) {
-    if (!this.synth) return;
+  ): boolean {
+    if (!this.synth) return false;
 
     // Immediately stop any prior synthesis
     this.stopSpeaking();
@@ -318,7 +334,7 @@ class SpeechService {
       .replace(/https?:\/\/\S+/g, 'link')
       .trim();
 
-    if (!cleanedText) return;
+    if (!cleanedText) return false;
 
     const utterance = new SpeechSynthesisUtterance(cleanedText);
 
@@ -383,6 +399,7 @@ class SpeechService {
 
     this.activeUtterance = utterance;
     this.synth.speak(utterance);
+    return true;
   }
 
   /**

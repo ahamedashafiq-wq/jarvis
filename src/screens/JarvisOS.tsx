@@ -461,7 +461,7 @@ export const JarvisOS: React.FC<JarvisOSProps> = ({ onNavigateRoute }) => {
   if (!activeWorkspace) {
     return (
       <div className="min-h-screen bg-[#050706] flex items-center justify-center p-6 text-mono text-[#19F59A]">
-        INITIALIZING JARVIS OS 1.0 WORKSPACE...
+        INITIALIZING ZORO OS WORKSPACE...
       </div>
     );
   }
@@ -471,7 +471,7 @@ export const JarvisOS: React.FC<JarvisOSProps> = ({ onNavigateRoute }) => {
   return (
     <div className="h-screen w-screen flex flex-col bg-[#050706] text-[#F5F7F6] overflow-hidden select-none font-mono">
       {/* ---------------------------------------------------- */}
-      {/* 1. JARVIS OS SHELL TOP BAR (Section 2, 15, 22, 29)  */}
+      {/* 1. ZORO OS SHELL TOP BAR (Section 2, 15, 22, 29)    */}
       {/* ---------------------------------------------------- */}
       {viewMode !== 'PRESENTATION' && (
         <header className="h-14 border-b border-[#16281F] bg-[#0A100D]/95 px-3 sm:px-4 flex items-center justify-between z-30 shrink-0 backdrop-blur-md">
@@ -490,8 +490,8 @@ export const JarvisOS: React.FC<JarvisOSProps> = ({ onNavigateRoute }) => {
               </div>
               <div className="hidden lg:block">
                 <div className="flex items-center gap-1">
-                  <span className="font-extrabold text-xs tracking-wider text-[#F5F7F6]">JARVIS OS</span>
-                  <span className="text-[8px] font-bold text-[#19F59A] px-1 rounded bg-[#00D084]/15">v1.0</span>
+                  <span className="font-extrabold text-xs tracking-wider text-[#F5F7F6]">ZORO OS</span>
+                  <span className="text-[8px] font-bold text-[#19F59A] px-1 rounded bg-[#00D084]/15">2.0</span>
                 </div>
               </div>
             </div>
@@ -553,7 +553,7 @@ export const JarvisOS: React.FC<JarvisOSProps> = ({ onNavigateRoute }) => {
         <div className="px-4 py-1.5 bg-[#FFB000]/15 border-b border-[#FFB000]/50 text-[#FFB000] text-[11px] font-mono flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HelpCircle className="w-3.5 h-3.5" />
-            <span className="font-bold">JARVIS DEMO MODE ACTIVE</span>
+            <span className="font-bold">ZORO DEMO MODE ACTIVE</span>
             <span>• Simulated telemetry & safe layout preview. Real user data is untouched.</span>
           </div>
           <button
@@ -819,7 +819,7 @@ export const JarvisOS: React.FC<JarvisOSProps> = ({ onNavigateRoute }) => {
                   ? { id: activeWorkspace.associatedProjectId || '', title: activeWorkspace.associatedProjectName }
                   : null
               }
-              placeholder="JARVIS OS Universal Command (e.g. 'Open Vision', 'Set up my development workspace', 'Close Memory')..."
+              placeholder="ZORO OS Universal Command (e.g. 'Open Vision', 'Set up my development workspace', 'Close Memory')..."
               isProcessing={coreState === 'PLANNING' || coreState === 'EXECUTING'}
             />
           </div>

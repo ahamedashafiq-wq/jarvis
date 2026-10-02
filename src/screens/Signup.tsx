@@ -95,7 +95,7 @@ export const Signup: React.FC<SignupProps> = ({ onNavigate }) => {
                   name="email"
                   type="email"
                   required
-                  placeholder="operator@jarvis.ai"
+                  placeholder="commander@zoro.omnia"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-3 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"

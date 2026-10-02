@@ -109,8 +109,8 @@ export const ZoroIntelligenceFeed: React.FC<ZoroIntelligenceFeedProps> = ({
       items.push({
         id: 'feed_sys_state',
         category: 'SYSTEM',
-        title: isSupabaseConfigured() ? 'Supabase Synapse Connected' : 'Local Offline Sandbox Active',
-        description: isSupabaseConfigured()
+        title: isSupabaseConfigured ? 'Supabase Synapse Connected' : 'Local Offline Sandbox Active',
+        description: isSupabaseConfigured
           ? 'Cloud replication and multi-client event broadcasting operational.'
           : 'Zero network dependency fallback securely caching all mutations locally.',
         actionRoute: '/settings',

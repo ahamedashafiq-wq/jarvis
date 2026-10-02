@@ -299,7 +299,7 @@ class ActionRegistryService {
         });
 
         // Generate briefing content using server Gemini endpoint if available, else high-fidelity tactical synthesis
-        const prompt = `Generate a concise, disciplined tactical daily briefing for the operator of JARVIS Zoro Edition.
+        const prompt = `Generate a concise, disciplined tactical daily briefing for Commander on ZORO 2.0 OMNIA.
 Use actual telemetry:
 - Active Missions (${activeMissions.length}): ${activeMissions.map((m) => `"${m.title}" (${m.progress}%)`).join(', ') || 'None'}
 - High-Priority Tasks (${highPriorityTasks.length}): ${highPriorityTasks.map((t) => `"${t.title}"`).join(', ') || 'None'}

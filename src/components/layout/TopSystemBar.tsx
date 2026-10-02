@@ -68,21 +68,21 @@ export const TopSystemBar: React.FC<TopSystemBarProps> = ({
         <button
           onClick={() => onNavigate('/os')}
           className="flex items-center gap-2 group text-left transition-colors"
-          aria-label="JARVIS OS Home"
+          aria-label="ZORO OS Home"
         >
           <div className="w-8 h-8 rounded border border-jarvis-primary/30 bg-jarvis-surface flex items-center justify-center relative overflow-hidden group-hover:border-jarvis-primary/60 transition-all">
-            <span className="text-jarvis-primary text-xs font-bold tracking-tighter">J2</span>
+            <span className="text-jarvis-primary text-xs font-bold tracking-tighter">Z2</span>
             <div className="absolute inset-0 bg-jarvis-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-none">
               <span className="font-bold text-xs tracking-wider text-jarvis-text group-hover:text-jarvis-primary transition-colors">
-                JARVIS OS
+                ZORO OS
               </span>
               <span className="text-[10px] text-jarvis-primary font-semibold">2.0</span>
             </div>
             <div className="text-[9px] text-jarvis-textMuted tracking-wider truncate">
-              NEURAL COMMAND PLATFORM
+              OMNIA COMMAND PLATFORM
             </div>
           </div>
         </button>

@@ -132,11 +132,11 @@ export const AgentCouncil: React.FC<AgentCouncilProps> = ({ onNavigate }) => {
 
       {/* Interactive Council Visual Tree */}
       <div className="p-6 sm:p-8 rounded-2xl bg-[#0A100D] border border-[#16281F] flex flex-col items-center justify-center relative overflow-hidden space-y-6 shadow-2xl">
-        {/* Level 1: JARVIS Core */}
+        {/* Level 1: ZORO OMNIA Core */}
         <div className="flex flex-col items-center space-y-2 z-10">
           <AIOrb state={simulationState !== 'IDLE' ? 'THINKING' : 'IDLE'} size={90} />
           <div className="px-3 py-1 rounded-lg bg-[#050706] border border-[#16281F] text-center">
-            <span className="text-xs font-bold text-[#F5F7F6]">ZORO TACTICAL CORE</span>
+            <span className="text-xs font-bold text-[#F5F7F6]">ZORO OMNIA CORE</span>
             <div className="text-[9px] text-[#8B9992]">CENTRAL INTELLIGENCE COMMAND</div>
           </div>
         </div>

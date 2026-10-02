@@ -51,7 +51,7 @@ export const SystemCommandOverlay: React.FC<SystemCommandOverlayProps> = ({
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-[#19F59A] animate-pulse" />
             <h2 className="text-sm font-black text-[#F5F7F6] tracking-wider">
-              JARVIS CORE • SYSTEM COMMAND OVERLAY
+              ZORO OMNIA CORE • SYSTEM COMMAND OVERLAY
             </h2>
           </div>
           <button
@@ -67,7 +67,7 @@ export const SystemCommandOverlay: React.FC<SystemCommandOverlayProps> = ({
           {/* Service States Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2.5 rounded-xl bg-[#050706] border border-[#16281F] space-y-1">
-              <span className="text-[10px] text-[#8B9992]">JARVIS CORE</span>
+              <span className="text-[10px] text-[#8B9992]">ZORO CORE</span>
               <div className="flex items-center gap-1.5 text-[#19F59A] font-bold">
                 <span className="w-2 h-2 rounded-full bg-[#19F59A]" />
                 <span>ONLINE</span>

@@ -176,7 +176,7 @@ export const VoiceWaveform: React.FC<VoiceWaveformProps> = ({
       <div className="flex items-center justify-between w-full px-2 text-[9px] font-mono text-[#8B9992]">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-[#19F59A] animate-pulse" />
-          <span>ACOUSTIC SPECTRUM: {state === 'LISTENING' ? 'OPERATOR INPUT' : state === 'SPEAKING' ? 'JARVIS SYNTHESIS' : 'STANDBY'}</span>
+          <span>ACOUSTIC SPECTRUM: {state === 'LISTENING' ? 'OPERATOR INPUT' : state === 'SPEAKING' ? 'ZORO SYNTHESIS' : 'STANDBY'}</span>
         </div>
         <div className="flex items-center gap-3">
           <span>FREQ: 16.0 kHz</span>

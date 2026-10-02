@@ -74,7 +74,7 @@ export const AgentPlanApprovalModal: React.FC<AgentPlanApprovalModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-sm text-[#F5F7F6] tracking-wider">
-                  JARVIS ACTION PLAN
+                  ZORO ACTION PLAN
                 </span>
                 <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${risk.bg}`}>
                   {risk.label}

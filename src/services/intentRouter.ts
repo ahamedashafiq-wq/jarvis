@@ -1985,7 +1985,7 @@ export async function executeIntent(
         const execTime = Math.round(performance.now() - startTime);
 
         const statusReport = `SYSTEM TELEMETRY REPORT:
-• CORE: JARVIS ZORO EDITION v2.0
+• CORE: ZORO 2.0 OMNIA CORE
 • BLADE 01 (INTELLECT): ONLINE (GEMINI 3.8 FLASH)
 • BLADE 02 (ACTION QUEUE): ${activeTasks} ACTIVE DIRECTIVES
 • BLADE 03 (PERSISTENT MEMORY): ${memories} SECURE NODES
@@ -2005,7 +2005,7 @@ export async function executeIntent(
       case 'SETTINGS_UPDATE': {
         const currentSettings = getLocalStore<Settings>(`settings_${userId}`, {
           user_id: userId,
-          assistant_name: 'JARVIS',
+          assistant_name: 'ZORO',
           response_mode: 'NORMAL',
           voice_enabled: true,
           voice_rate: 1.0,
