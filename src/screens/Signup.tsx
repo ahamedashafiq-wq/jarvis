@@ -70,51 +70,58 @@ export const Signup: React.FC<SignupProps> = ({ onNavigate }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="text-[10px] text-[#8B9992] block mb-1">CALLSIGN (DISPLAY NAME)</label>
+              <label htmlFor="signup-callsign" className="text-[10px] text-jarvis-textMuted block mb-1">CALLSIGN (DISPLAY NAME)</label>
               <div className="relative">
-                <User className="w-4 h-4 text-[#8B9992] absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  id="signup-callsign"
+                  name="displayName"
                   type="text"
                   required
                   placeholder="e.g. Roronoa, Phoenix, Commander"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full bg-[#050706] border border-[#16281F] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#F5F7F6] focus:border-[#00D084] outline-none"
+                  className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-3 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] text-[#8B9992] block mb-1">OPERATOR EMAIL</label>
+              <label htmlFor="signup-email" className="text-[10px] text-jarvis-textMuted block mb-1">OPERATOR EMAIL</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#8B9992] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  id="signup-email"
+                  name="email"
                   type="email"
                   required
                   placeholder="operator@jarvis.ai"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#050706] border border-[#16281F] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#F5F7F6] focus:border-[#00D084] outline-none"
+                  className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-3 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] text-[#8B9992] block mb-1">SECURITY CIPHER</label>
+              <label htmlFor="signup-password" className="text-[10px] text-jarvis-textMuted block mb-1">SECURITY CIPHER</label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#8B9992] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  id="signup-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#050706] border border-[#16281F] rounded-xl pl-9 pr-10 py-2.5 text-xs text-[#F5F7F6] focus:border-[#00D084] outline-none"
+                  className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-10 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B9992] hover:text-[#F5F7F6]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-jarvis-textMuted hover:text-jarvis-text"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

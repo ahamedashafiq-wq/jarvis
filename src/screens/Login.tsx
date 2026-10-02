@@ -78,45 +78,50 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="text-[10px] text-[#8B9992] block mb-1">OPERATOR EMAIL</label>
+              <label htmlFor="login-email" className="text-[10px] text-jarvis-textMuted block mb-1">OPERATOR EMAIL</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#8B9992] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  id="login-email"
+                  name="email"
                   type="email"
                   required
                   placeholder="commander@jarvis.ai"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#050706] border border-[#16281F] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#F5F7F6] focus:border-[#00D084] outline-none"
+                  className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-3 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-[10px] text-[#8B9992] mb-1">
-                <label>SECURITY CIPHER (PASSWORD)</label>
+              <div className="flex items-center justify-between text-[10px] text-jarvis-textMuted mb-1">
+                <label htmlFor="login-password">SECURITY CIPHER (PASSWORD)</label>
                 <button
                   type="button"
                   onClick={() => onNavigate('/forgot-password')}
-                  className="text-[#19F59A] hover:underline"
+                  className="text-jarvis-primary hover:underline"
                 >
                   RECOVER?
                 </button>
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#8B9992] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  id="login-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#050706] border border-[#16281F] rounded-xl pl-9 pr-10 py-2.5 text-xs text-[#F5F7F6] focus:border-[#00D084] outline-none"
+                  className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-10 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B9992] hover:text-[#F5F7F6]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-jarvis-textMuted hover:text-jarvis-text"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

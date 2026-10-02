@@ -411,6 +411,10 @@ class RealtimeService {
     return this.connectionStatus;
   }
 
+  public isConnected(): boolean {
+    return this.connectionStatus === 'CONNECTED';
+  }
+
   public getNetworkStatus(): NetworkStatus {
     return this.networkStatus;
   }

@@ -58,16 +58,18 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigate }) =>
               </p>
 
               <div>
-                <label className="text-[10px] text-[#8B9992] block mb-1">REGISTERED EMAIL</label>
+                <label htmlFor="forgot-email" className="text-[10px] text-jarvis-textMuted block mb-1">REGISTERED EMAIL</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#8B9992] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-jarvis-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="forgot-email"
+                    name="email"
                     type="email"
                     required
                     placeholder="commander@jarvis.ai"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#050706] border border-[#16281F] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#F5F7F6] focus:border-[#00D084] outline-none"
+                    className="w-full bg-jarvis-bg border border-jarvis-border rounded-lg pl-9 pr-3 py-2.5 text-xs text-jarvis-text focus:border-jarvis-primary outline-none"
                   />
                 </div>
               </div>

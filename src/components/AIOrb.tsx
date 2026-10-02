@@ -12,23 +12,23 @@ export const AIOrb: React.FC<AIOrbProps> = ({ state, size = 180, className = '',
   const getColor = () => {
     switch (state) {
       case 'LISTENING':
-        return '#19F59A';
+        return '#00F5A0';
       case 'THINKING':
-        return '#00D084';
+        return '#00D9FF';
       case 'SPEAKING':
-        return '#38E1FF';
+        return '#00D9FF';
       case 'ANALYZING':
-        return '#00F0FF';
+        return '#8B5CF6';
       case 'STREAMING':
-        return '#19F59A';
+        return '#00F5A0';
       case 'EXECUTING':
         return '#FFB000';
       case 'ERROR':
-        return '#FF3B30';
+        return '#FF3B5C';
       case 'SUCCESS':
-        return '#00D084';
+        return '#00F5A0';
       default:
-        return '#087F55';
+        return '#00F5A0';
     }
   };
 

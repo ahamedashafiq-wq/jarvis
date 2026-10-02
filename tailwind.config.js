@@ -8,22 +8,35 @@ export default {
     extend: {
       colors: {
         jarvis: {
-          bg: '#050706',
-          panel: '#0A100D',
-          panelElevated: '#121C17',
-          border: '#16281F',
-          primary: '#00D084',
-          bright: '#19F59A',
-          secondary: '#087F55',
-          text: '#F5F7F6',
-          muted: '#8B9992',
+          bg: '#030605',
+          surface: '#07100D',
+          surfaceElevated: '#0A1512',
+          border: 'rgba(0, 255, 170, 0.14)',
+          borderHover: 'rgba(0, 255, 170, 0.28)',
+          primary: '#00F5A0',
+          secondary: '#00D9FF',
+          accent: '#8B5CF6',
           warning: '#FFB000',
-          danger: '#FF3B30',
+          danger: '#FF3B5C',
+          success: '#00F5A0',
+          text: '#F5F7F6',
+          textSecondary: '#8A9A94',
+          textMuted: '#52635D',
+          // Backwards compatibility with 1.0 tokens
+          panel: '#07100D',
+          panelElevated: '#0A1512',
+          bright: '#00F5A0',
+          muted: '#8A9A94',
         },
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        'glow-primary': '0 0 20px -5px rgba(0, 245, 160, 0.3)',
+        'glow-secondary': '0 0 20px -5px rgba(0, 217, 255, 0.3)',
+        'glow-accent': '0 0 20px -5px rgba(139, 92, 246, 0.3)',
       },
       animation: {
         'pulse-glow': 'pulseGlow 2.5s infinite ease-in-out',
@@ -33,7 +46,7 @@ export default {
       keyframes: {
         pulseGlow: {
           '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
-          '50%': { opacity: '1', transform: 'scale(1.05)' },
+          '50%': { opacity: '1', transform: 'scale(1.03)' },
         },
         spinReverse: {
           '0%': { transform: 'rotate(360deg)' },

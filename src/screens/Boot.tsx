@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AIOrb } from '../components/AIOrb';
 import { Shield, Check, ArrowRight, Terminal } from 'lucide-react';
+import { soundService } from '../services/sound';
 
 interface BootScreenProps {
   onComplete: () => void;
@@ -8,15 +9,11 @@ interface BootScreenProps {
 
 export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
   const bootSteps = [
-    'INITIALIZING JARVIS PROTOCOL...',
-    'CALIBRATING THREE BLADES SYNAPSE...',
-    'BLADE 01 (ENMA / KNOWLEDGE) ...... ONLINE',
-    'GEMINI 3.8 FLASH CORE ........... SYNCHRONIZED',
-    'BLADE 02 (WADO ICHIMONJI / ACTION) READY',
-    'BLADE 03 (SANDAI KITETSU / MEMORY) CONNECTED',
-    'SPEECH SYNTHESIS & RECOGNITION .. ARMED',
-    'TACTICAL PERIMETER SECURED',
-    'SYSTEM STATUS: ALL MATRICES OPTIMAL',
+    'INITIALIZING CORE...',
+    'LOADING MEMORY...',
+    'CONNECTING SERVICES...',
+    'VERIFYING AGENTS...',
+    'SYSTEM READY',
   ];
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -27,75 +24,81 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
     if (currentStepIndex < bootSteps.length) {
       timeout = setTimeout(() => {
         setCurrentStepIndex((prev) => prev + 1);
-      }, 260);
+        soundService.play('CLICK');
+      }, 250);
     } else {
       timeout = setTimeout(() => {
         setIsFinished(true);
-      }, 350);
+        soundService.play('COMMAND_SUCCESS');
+        // Auto transition after short 400ms confirmation
+        setTimeout(() => {
+          onComplete();
+        }, 500);
+      }, 300);
     }
     return () => clearTimeout(timeout);
   }, [currentStepIndex, bootSteps.length]);
 
   return (
-    <div className="min-h-screen bg-[#050706] text-[#F5F7F6] flex flex-col items-center justify-center p-4 font-mono select-none">
-      <div className="w-full max-w-lg space-y-6 flex flex-col items-center">
+    <div className="min-h-screen bg-jarvis-bg text-jarvis-text flex flex-col items-center justify-center p-4 font-mono select-none">
+      <div className="w-full max-w-md space-y-6 flex flex-col items-center">
         {/* Animated AI Orb */}
-        <AIOrb state={isFinished ? 'SUCCESS' : 'EXECUTING'} size={150} />
+        <AIOrb state={isFinished ? 'SUCCESS' : 'EXECUTING'} size={130} />
 
         {/* Title */}
         <div className="text-center space-y-1">
           <div className="flex items-center justify-center gap-2">
-            <Shield className="w-5 h-5 text-[#19F59A]" />
-            <h1 className="text-lg font-black tracking-widest text-[#F5F7F6]">
-              JARVIS — ZORO EDITION
+            <Shield className="w-4 h-4 text-jarvis-primary" />
+            <h1 className="text-base sm:text-lg font-black tracking-widest text-jarvis-text">
+              JARVIS OS 2.0
             </h1>
           </div>
-          <p className="text-[10px] text-[#8B9992] tracking-widest">
-            SANTORYU AUTONOMOUS WARRIOR INTELLIGENCE
+          <p className="text-[10px] text-jarvis-textMuted tracking-widest uppercase">
+            NEURAL COMMAND PLATFORM • THREE BLADES MATRIX
           </p>
         </div>
 
-        {/* Boot Logs Terminal */}
-        <div className="w-full bg-[#0A100D] border border-[#16281F] rounded-xl p-4 shadow-2xl space-y-2">
-          <div className="flex items-center justify-between pb-2 border-b border-[#16281F] text-[10px] text-[#8B9992]">
+        {/* Boot Terminal */}
+        <div className="w-full bg-jarvis-surfaceElevated border border-jarvis-border rounded-lg p-4 shadow-2xl space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-jarvis-border/60 text-[10px] text-jarvis-textMuted">
             <div className="flex items-center gap-1.5">
-              <Terminal className="w-3.5 h-3.5 text-[#19F59A]" />
-              <span>KERNEL BOOT TELEMETRY</span>
+              <Terminal className="w-3.5 h-3.5 text-jarvis-primary" />
+              <span>KERNEL INITIALIZATION</span>
             </div>
-            <span className="text-[#19F59A]">
+            <span className="text-jarvis-primary tabular-nums">
               {Math.min(Math.round((currentStepIndex / bootSteps.length) * 100), 100)}%
             </span>
           </div>
 
-          <div className="space-y-1.5 min-h-[160px] text-xs">
+          <div className="space-y-2 min-h-[140px] text-xs">
             {bootSteps.slice(0, currentStepIndex).map((step, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                <span className="text-[#00D084] font-bold">›</span>
-                <span className={idx === currentStepIndex - 1 ? 'text-[#19F59A] font-bold' : 'text-[#8B9992]'}>
+                <span className="text-jarvis-primary font-bold">›</span>
+                <span className={idx === currentStepIndex - 1 ? 'text-jarvis-primary font-bold' : 'text-jarvis-textSecondary'}>
                   {step}
                 </span>
                 {idx < currentStepIndex - 1 && (
-                  <Check className="w-3 h-3 text-[#19F59A] ml-auto shrink-0" />
+                  <Check className="w-3 h-3 text-jarvis-primary ml-auto shrink-0" />
                 )}
               </div>
             ))}
             {!isFinished && (
-              <div className="flex items-center gap-2 text-[#00D084] animate-pulse">
+              <div className="flex items-center gap-2 text-jarvis-primary animate-pulse">
                 <span>›</span>
-                <span className="inline-block w-2 h-4 bg-[#19F59A]" />
+                <span className="inline-block w-2 h-4 bg-jarvis-primary" />
               </div>
             )}
           </div>
         </div>
 
         {/* Action Button */}
-        <div className="w-full flex items-center justify-center gap-3">
+        <div className="w-full flex items-center justify-center">
           <button
             onClick={onComplete}
-            className="w-full py-3 rounded-lg bg-[#00D084] text-[#050706] font-bold text-xs tracking-wider hover:bg-[#19F59A] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,208,132,0.3)]"
+            className="w-full py-2.5 rounded border border-jarvis-primary bg-jarvis-primary text-black font-bold text-xs tracking-wider hover:bg-jarvis-primary/90 transition-all flex items-center justify-center gap-2 shadow-glow-primary"
           >
             <span>{isFinished ? 'ENTER COMMAND DECK' : 'SKIP INITIALIZATION'}</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
