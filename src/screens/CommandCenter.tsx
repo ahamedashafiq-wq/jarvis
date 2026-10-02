@@ -42,6 +42,11 @@ import {
   Task,
 } from '../types';
 import { CommandPreviewModal } from '../components/CommandPreviewModal';
+import { ZoroHeroAICore } from '../components/zoro/ZoroHeroAICore';
+import { ZoroThinkingPipeline } from '../components/zoro/ZoroThinkingPipeline';
+import { ZoroStructuredResponse } from '../components/zoro/ZoroStructuredResponse';
+import { ZoroAgentDeck } from '../components/zoro/ZoroAgentDeck';
+import { ZoroIntelligenceFeed } from '../components/zoro/ZoroIntelligenceFeed';
 import { NeuralCommandSurface } from '../components/command/NeuralCommandSurface';
 import { CommandProcessVisualizer } from '../components/command/CommandProcessVisualizer';
 import { MissionControlWidget } from '../components/mission/MissionControlWidget';
@@ -241,82 +246,58 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   return (
     <div className="space-y-6 select-none font-mono">
       {/* ---------------------------------------------------- */}
-      {/* 1. COMMAND CENTER 2.0 OPERATIONAL OVERVIEW (Section 7) */}
+      {/* 1. ZORO HERO AI CORE (Section 7)                     */}
       {/* ---------------------------------------------------- */}
-      <div className="rounded-lg border border-jarvis-border bg-jarvis-surfaceElevated p-4 sm:p-5 space-y-3 shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-jarvis-border/60 pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-jarvis-primary animate-pulse" />
-              <h1 className="text-sm sm:text-base font-bold text-jarvis-text tracking-wider uppercase">
-                JARVIS COMMAND CENTER 2.0
-              </h1>
-            </div>
-            <p className="text-xs text-jarvis-textSecondary mt-0.5">
-              Your intelligent operational workspace.
-            </p>
-          </div>
+      <ZoroHeroAICore
+        onNavigate={onNavigate}
+        onExecuteCommand={handleExecuteCommand}
+        onOpenVoice={onOpenVoiceHUD || (() => {})}
+        systemState={surfaceState}
+        activeMissionCount={stats.activeMissions}
+        totalTaskCount={stats.activeTasks}
+        memoryNodeCount={stats.totalMemories}
+      />
 
-          <div className="flex items-center gap-2 text-xs">
-            {activeMission && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-jarvis-surface border border-jarvis-border text-jarvis-textSecondary">
-                <Target className="w-3 h-3 text-jarvis-secondary" />
-                <span className="text-[10px] text-jarvis-textMuted">CONTEXT:</span>
-                <span className="text-jarvis-text font-bold truncate max-w-[150px]">
-                  {activeMission.title}
-                </span>
-                <button
-                  onClick={() => setIsChangingContext(true)}
-                  className="text-[10px] text-jarvis-primary hover:underline ml-1"
-                >
-                  CHANGE
-                </button>
-              </div>
-            )}
+      {/* Subsystem Live Telemetry Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs font-mono">
+        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
+          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">SYSTEM HEALTH</div>
+          <div className="text-xs font-bold text-zoro-cyan mt-0.5">100% NOMINAL</div>
+        </div>
+        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
+          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">ACTIVE MISSIONS</div>
+          <div className="text-sm font-bold text-zoro-text tabular-nums mt-0.5">
+            {stats.activeMissions}
           </div>
         </div>
-
-        {/* Operational Overview Statistics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs">
-          <div className="p-2 rounded bg-jarvis-surface border border-jarvis-border">
-            <div className="text-[10px] text-jarvis-textMuted">SYSTEM HEALTH</div>
-            <div className="text-xs font-bold text-jarvis-primary mt-0.5">100% NOMINAL</div>
+        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
+          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">AGENT STATUS</div>
+          <div className="text-xs font-bold text-zoro-blue mt-0.5">
+            {surfaceState === 'WAITING_APPROVAL' ? 'APPROVAL REQ' : 'READY'}
           </div>
-          <div className="p-2 rounded bg-jarvis-surface border border-jarvis-border">
-            <div className="text-[10px] text-jarvis-textMuted">ACTIVE MISSIONS</div>
-            <div className="text-sm font-bold text-jarvis-text tabular-nums mt-0.5">
-              {stats.activeMissions}
-            </div>
+        </div>
+        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
+          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">MEMORY BANK</div>
+          <div className="text-sm font-bold text-zoro-violet tabular-nums mt-0.5">
+            {stats.totalMemories} NODES
           </div>
-          <div className="p-2 rounded bg-jarvis-surface border border-jarvis-border">
-            <div className="text-[10px] text-jarvis-textMuted">AGENT STATUS</div>
-            <div className="text-xs font-bold text-jarvis-secondary mt-0.5">
-              {surfaceState === 'WAITING_APPROVAL' ? 'APPROVAL REQ' : 'READY'}
-            </div>
+        </div>
+        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
+          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">AUTOMATIONS</div>
+          <div className="text-sm font-bold text-zoro-warning tabular-nums mt-0.5">
+            {stats.activeAutomations} ACTIVE
           </div>
-          <div className="p-2 rounded bg-jarvis-surface border border-jarvis-border">
-            <div className="text-[10px] text-jarvis-textMuted">MEMORY STATUS</div>
-            <div className="text-sm font-bold text-jarvis-accent tabular-nums mt-0.5">
-              {stats.totalMemories} NODES
-            </div>
-          </div>
-          <div className="p-2 rounded bg-jarvis-surface border border-jarvis-border">
-            <div className="text-[10px] text-jarvis-textMuted">AUTOMATIONS</div>
-            <div className="text-sm font-bold text-jarvis-warning tabular-nums mt-0.5">
-              {stats.activeAutomations} ACTIVE
-            </div>
-          </div>
-          <div className="p-2 rounded bg-jarvis-surface border border-jarvis-border">
-            <div className="text-[10px] text-jarvis-textMuted">REALTIME</div>
-            <div className="text-xs font-bold text-jarvis-primary mt-0.5">
-              {realtimeService.isConnected() ? 'CONNECTED' : 'SYNCING'}
-            </div>
+        </div>
+        <div className="p-2.5 rounded-xl bg-zoro-panel border border-zoro-border shadow-sm">
+          <div className="text-[10px] text-zoro-textMuted uppercase font-bold tracking-wider">REALTIME</div>
+          <div className="text-xs font-bold text-zoro-cyan mt-0.5">
+            {realtimeService.isConnected() ? 'CONNECTED' : 'SYNCING'}
           </div>
         </div>
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* 2. NEURAL COMMAND SURFACE (Section 8)                */}
+      {/* 2. ZORO NATURAL LANGUAGE COMMAND SURFACE (Section 10) */}
       {/* ---------------------------------------------------- */}
       <NeuralCommandSurface
         onExecute={handleExecuteCommand}
@@ -331,70 +312,25 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       />
 
       {/* ---------------------------------------------------- */}
-      {/* 3. COMMAND PROCESS VISUALIZER (Section 9)            */}
+      {/* 3. AI THINKING PIPELINE (Section 11 & 35)            */}
       {/* ---------------------------------------------------- */}
       {surfaceState !== 'IDLE' && (
-        <CommandProcessVisualizer
+        <ZoroThinkingPipeline
           surfaceState={surfaceState}
           errorMessage={activeResult?.status === 'FAILED' ? activeResult.summary : undefined}
+          executionTimeMs={activeResult?.executionTimeMs}
         />
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* 4. ACTIVE COMMAND RESULT CARD                        */}
+      {/* 4. STRUCTURED ZORO RESPONSE CARD (Section 34)        */}
       {/* ---------------------------------------------------- */}
       {activeResult && !isSearchActive && (
-        <div className="p-4 sm:p-5 rounded-lg border border-jarvis-border bg-jarvis-surfaceElevated shadow-xl space-y-3">
-          <div className="flex items-center justify-between border-b border-jarvis-border/60 pb-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle2
-                className={`w-4 h-4 ${
-                  activeResult.status === 'SUCCESS' ? 'text-jarvis-primary' : 'text-jarvis-danger'
-                }`}
-              />
-              <span className="font-bold text-xs text-jarvis-text">
-                {activeResult.headline}
-              </span>
-              <span className="text-[10px] text-jarvis-textMuted tabular-nums">
-                {activeResult.executionTimeMs}ms
-              </span>
-            </div>
-
-            <button
-              onClick={() => setActiveResult(null)}
-              className="text-xs text-jarvis-textMuted hover:text-jarvis-text"
-            >
-              DISMISS
-            </button>
-          </div>
-
-          <p className="text-xs text-jarvis-textSecondary leading-relaxed whitespace-pre-wrap">
-            {activeResult.summary}
-          </p>
-
-          {activeResult.details && activeResult.details.length > 0 && (
-            <div className="space-y-1 bg-jarvis-surface p-2.5 rounded border border-jarvis-border/60 text-[11px] text-jarvis-textSecondary">
-              {activeResult.details.map((d, i) => (
-                <div key={i} className="flex items-start gap-1.5">
-                  <span className="text-jarvis-primary">›</span>
-                  <span>{d}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeResult.actionTaken && activeResult.actionTaken.linkRoute && (
-            <div className="pt-1 flex justify-end">
-              <button
-                onClick={() => onNavigate(activeResult.actionTaken!.linkRoute!)}
-                className="px-3 py-1.5 rounded border border-jarvis-primary bg-jarvis-primary/10 hover:bg-jarvis-primary/20 text-jarvis-primary text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              >
-                <span>{activeResult.actionTaken.linkLabel || 'INSPECT'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
+        <ZoroStructuredResponse
+          result={activeResult}
+          onNavigate={onNavigate}
+          onDismiss={() => setActiveResult(null)}
+        />
       )}
 
       {/* ---------------------------------------------------- */}
@@ -463,20 +399,26 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       {/* ---------------------------------------------------- */}
       {/* 6. RESPONSIVE GRID OF SUBSYSTEM WIDGETS (Section 4 & 44) */}
       {/* ---------------------------------------------------- */}
-      {/* ROW 1: MISSION CONTROL 2.0 & AGENTIC BRAIN 2.0 */}
+      {/* ROW 1: AGENT COMMAND CENTER & COUNCIL (Section 12 & 13) */}
+      <ZoroAgentDeck
+        userId={userId}
+        onNavigate={onNavigate}
+      />
+
+      {/* ROW 2: PROACTIVE INTELLIGENCE FEED & MISSION CONTROL (Section 14 & 21) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ZoroIntelligenceFeed
+          userId={userId}
+          onNavigate={onNavigate}
+        />
         <MissionControlWidget
           userId={userId}
           onNavigate={onNavigate}
-          onPlanWithJarvis={() => handleExecuteCommand('Plan with JARVIS')}
-        />
-        <AgentBrainDeck
-          userId={userId}
-          onNavigateToAgents={() => onNavigate('/agents')}
+          onPlanWithJarvis={() => handleExecuteCommand('Plan with ZORO')}
         />
       </div>
 
-      {/* ROW 2: VISION CORE 2.0 & MEMORY CORE 2.0 */}
+      {/* ROW 3: VISION CORE 2.0 & MEMORY CORE 2.0 (Section 16 & 17) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <VisionCoreWidget
           userId={userId}
@@ -488,7 +430,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         />
       </div>
 
-      {/* ROW 3: ACTION QUEUE 2.0 & ANALYTICS TELEMETRY CORE */}
+      {/* ROW 4: ACTION QUEUE 2.0 & ANALYTICS TELEMETRY CORE (Section 15 & 19) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ActionQueueWidget
           userId={userId}

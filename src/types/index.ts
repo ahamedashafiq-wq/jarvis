@@ -30,6 +30,8 @@ export type RoutePath =
   | '/profile'
   | '/automation'
   | '/vision'
+  | '/knowledge'
+  | '/integrations'
   | '/neural-memory';
 
 export type AIOrbState =

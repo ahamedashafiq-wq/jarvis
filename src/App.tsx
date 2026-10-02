@@ -28,6 +28,7 @@ import { AgentCouncil } from './screens/AgentCouncil';
 import { AutomationScreen } from './screens/Automation';
 import { VisionScreen } from './screens/Vision';
 import { IntelligenceScreen } from './screens/Intelligence';
+import { KnowledgeScreen } from './screens/Knowledge';
 import { automationScheduler } from './services/automation/scheduler';
 import { AutomationService } from './services/automation';
 import { MissionService } from './services/mission';
@@ -267,6 +268,10 @@ export const App: React.FC = () => {
         return <Tasks onNavigate={navigate} />;
       case '/memory':
         return <MemoryScreen onNavigate={navigate} />;
+      case '/knowledge':
+        return <KnowledgeScreen onNavigate={navigate} />;
+      case '/integrations':
+        return <Settings onNavigate={navigate} />;
       case '/memory/graph':
         return <MemoryScreen onNavigate={navigate} initialTab="GRAPH" />;
       case '/memory/timeline':
@@ -315,6 +320,7 @@ export const App: React.FC = () => {
       isExecuting={isExecutingGlobal}
       coreState={coreState}
       badges={badges}
+      onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
     >
       {renderScreen()}
 

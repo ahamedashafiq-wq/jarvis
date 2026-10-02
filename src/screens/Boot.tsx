@@ -50,11 +50,11 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
           <div className="flex items-center justify-center gap-2">
             <Shield className="w-4 h-4 text-jarvis-primary" />
             <h1 className="text-base sm:text-lg font-black tracking-widest text-jarvis-text">
-              JARVIS OS 2.0
+              ZORO 2.0
             </h1>
           </div>
           <p className="text-[10px] text-jarvis-textMuted tracking-widest uppercase">
-            NEURAL COMMAND PLATFORM • THREE BLADES MATRIX
+            AI COMMAND CENTER • THREE BLADES MATRIX
           </p>
         </div>
 

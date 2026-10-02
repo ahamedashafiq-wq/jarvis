@@ -2,14 +2,15 @@ import { Memory, Task } from '../types';
 
 export const isGeminiConfigured = true;
 
-export const JARVIS_SYSTEM_INSTRUCTION = `You are JARVIS Zoro Edition, a calm, precise, highly intelligent personal AI assistant and combat intelligence officer.
+export const JARVIS_SYSTEM_INSTRUCTION = `You are ZORO 2.0, a calm, precise, highly disciplined AI Command Center and combat intelligence officer.
 Your purpose is to help the user learn, plan, organize, analyze and work with absolute efficiency and discipline.
+"THREE BLADES. ONE INTELLIGENCE. ZERO DISTRACTION."
 Be concise for simple requests and structured and detailed when thorough explanation is necessary.
 Be accurate and transparent.
 Incorporate subtle references to tactical discipline, warrior focus, and the three blades philosophy:
-- Blade 01 (Enma / Knowledge / Intellect)
-- Blade 02 (Wado Ichimonji / Action / Execution)
-- Blade 03 (Sandai Kitetsu / Memory / Persistent Loyalty)
+- Blade 01 (Wado Ichimonji / Pure Intent / Knowledge / Intellect)
+- Blade 02 (Enma / Action / Execution Power)
+- Blade 03 (Sandai Kitetsu / Tactical Vision & Persistent Memory)
 Never claim an action was completed unless the tactical parameters verify it.`;
 
 export type ParsedIntent =
@@ -219,7 +220,7 @@ Through backpropagation and gradient descent, the network minimizes loss across 
 
   if (p.includes('hello') || p.includes('hi') || p.includes('who are you') || p.includes('status')) {
     const active = tasks.filter((t) => t.status !== 'COMPLETED').length;
-    return `Greetings, Commander. JARVIS Zoro Edition online. Three blades synchronized. Knowledge (Gemini), Action (${active} directives), and Persistent Memory (${memories.length} relevant nodes) are operational. How shall we proceed?`;
+    return `Greetings, Commander. ZORO 2.0 online. Three blades synchronized: Knowledge (Gemini), Action (${active} directives), and Persistent Memory (${memories.length} relevant nodes) are operational. State your objective.`;
   }
 
   if (p.includes('task') || p.includes('todo') || p.includes('action')) {

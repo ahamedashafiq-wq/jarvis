@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RoutePath } from '../../types';
-import { TopSystemBar } from './TopSystemBar';
-import { NavigationSidebar } from './NavigationSidebar';
-import { GlobalCommandDock } from './GlobalCommandDock';
+import { ZoroHeader } from '../zoro/ZoroHeader';
+import { ZoroSidebar } from '../zoro/ZoroSidebar';
+import { ZoroIntelligencePanel } from '../zoro/ZoroIntelligencePanel';
+import { ZoroVoiceCommandBar } from '../zoro/ZoroVoiceCommandBar';
 import { GlobalVoiceHUD } from '../GlobalVoiceHUD';
 import { SystemHealthModal } from './SystemHealthModal';
 import { DeveloperConsoleModal } from './DeveloperConsoleModal';
-import { Menu } from 'lucide-react';
+import { soundService } from '../../services/sound';
 
 interface AppShellProps {
   currentPath: RoutePath;
@@ -27,6 +28,7 @@ interface AppShellProps {
     memoriesCount?: number;
     automationsCount?: number;
   };
+  onOpenCommandPalette?: () => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
@@ -42,90 +44,115 @@ export const AppShell: React.FC<AppShellProps> = ({
   isExecuting = false,
   coreState = 'READY',
   badges = {},
+  onOpenCommandPalette,
 }) => {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isIntelligencePanelOpen, setIsIntelligencePanelOpen] = useState(true);
   const [isSystemHealthOpen, setIsSystemHealthOpen] = useState(false);
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
 
+  // Shortcut Ctrl + B to toggle sidebar collapsed state (Section 5)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const isInput = ['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName);
+      if (!isInput && (e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setIsSidebarCollapsed((prev) => !prev);
+        soundService.play('CLICK');
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-jarvis-bg text-jarvis-text flex flex-col font-sans selection:bg-jarvis-primary/20 selection:text-jarvis-primary">
-      {/* Top System Bar (Section 5) */}
-      <TopSystemBar
+    <div className="min-h-screen bg-zoro-bg text-zoro-text flex flex-col font-sans selection:bg-zoro-cyan/20 selection:text-zoro-cyan">
+      {/* 1. Global Top Command Bar (Section 6) */}
+      <ZoroHeader
         currentPath={currentPath}
         onNavigate={onNavigate}
+        onOpenSearch={() => {
+          if (onOpenCommandPalette) {
+            onOpenCommandPalette();
+          } else {
+            onExecuteCommand('');
+          }
+        }}
+        operatorName="COMMANDER"
+        onToggleMobileNav={() => setIsMobileNavOpen((prev) => !prev)}
+        onToggleSidebarCollapsed={() => setIsSidebarCollapsed((prev) => !prev)}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleIntelligencePanel={() => setIsIntelligencePanelOpen((prev) => !prev)}
+        isIntelligencePanelOpen={isIntelligencePanelOpen}
         onOpenSystemHealth={() => setIsSystemHealthOpen(true)}
         onOpenDevConsole={() => setIsDevConsoleOpen(true)}
         activeMissionTitle={activeMissionTitle}
-        coreState={coreState}
       />
 
-      {/* Mobile Hamburger Header (Only on small screens) */}
-      <div className="md:hidden flex items-center justify-between px-4 py-2 border-b border-jarvis-border/60 bg-jarvis-surface font-mono text-xs">
-        <button
-          onClick={() => setIsMobileNavOpen(true)}
-          className="flex items-center gap-2 text-jarvis-primary px-2 py-1 rounded border border-jarvis-border"
-          aria-label="Open Navigation Menu"
-        >
-          <Menu className="w-4 h-4" />
-          <span>MENU</span>
-        </button>
-        <span className="text-[10px] text-jarvis-textMuted uppercase tracking-wider truncate max-w-[200px]">
-          {currentPath.replace('/', '').toUpperCase() || 'COMMAND CENTER'}
-        </span>
-      </div>
-
-      {/* Main Structural Body: Sidebar + Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Navigation Sidebar (Section 6) */}
-        <NavigationSidebar
+      {/* 2. Structured Global 3-Column Layout: Left Sidebar + Main Content + Right Intelligence Panel */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* LEFT SIDEBAR: Collapsible Navigation Rail (Section 5) */}
+        <ZoroSidebar
           currentPath={currentPath}
           onNavigate={onNavigate}
-          onOpenSystemHealth={() => setIsSystemHealthOpen(true)}
-          onOpenDevConsole={() => setIsDevConsoleOpen(true)}
           isMobileOpen={isMobileNavOpen}
           onCloseMobile={() => setIsMobileNavOpen(false)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapsed={() => setIsSidebarCollapsed((prev) => !prev)}
           badges={badges}
         />
 
-        {/* Backdrop for mobile drawer */}
+        {/* Mobile Backdrop */}
         {isMobileNavOpen && (
           <div
-            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-30 bg-black/75 backdrop-blur-sm md:hidden"
             onClick={() => setIsMobileNavOpen(false)}
           />
         )}
 
-        {/* Main Workspace with bottom padding for Global Command Dock */}
+        {/* MAIN CONTENT WORKSPACE: Flexible 8–9 columns */}
         <main className="flex-1 overflow-y-auto pb-24 md:pb-28">
-          <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+          <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-7 space-y-6">
             {children}
           </div>
         </main>
+
+        {/* RIGHT INTELLIGENCE PANEL: Tactical Telemetry & Stream */}
+        {isIntelligencePanelOpen && (
+          <div className="hidden xl:flex">
+            <ZoroIntelligencePanel
+              userId={userId}
+              onNavigate={onNavigate}
+              onOpenVoiceHUD={onOpenVoiceHUD}
+              onExecuteCommand={onExecuteCommand}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Global Command Dock (Section 18) */}
-      <GlobalCommandDock
+      {/* 3. Persistent Voice Command Bar (Section 8) */}
+      <ZoroVoiceCommandBar
         onExecuteCommand={onExecuteCommand}
-        onOpenVoiceHUD={onOpenVoiceHUD}
-        activeContextTitle={activeMissionTitle || 'AI Assistant'}
-        isExecuting={isExecuting}
+        isProcessing={isExecuting}
+        activeContextTitle={activeMissionTitle}
       />
 
-      {/* Global Voice HUD Modal (Section 19) */}
+      {/* Global Voice HUD Modal (Ctrl + Space) */}
       <GlobalVoiceHUD
         isOpen={isVoiceHUDOpen}
         onClose={onCloseVoiceHUD}
         onNavigate={onNavigate}
       />
 
-      {/* System Health Diagnostics Modal (Section 47) */}
+      {/* System Health Diagnostics Modal */}
       <SystemHealthModal
         isOpen={isSystemHealthOpen}
         onClose={() => setIsSystemHealthOpen(false)}
         userId={userId}
       />
 
-      {/* Developer Console Modal (Section 46) */}
+      {/* Developer Console Modal */}
       <DeveloperConsoleModal
         isOpen={isDevConsoleOpen}
         onClose={() => setIsDevConsoleOpen(false)}

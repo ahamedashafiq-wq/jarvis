@@ -321,7 +321,7 @@ export const MemoryScreen: React.FC<MemoryProps> = ({ onNavigate, initialTab }) 
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-black text-[#F5F7F6] tracking-wider">
-                  JARVIS NEURAL MEMORY
+                  ZORO NEURAL MEMORY
                 </h1>
                 <span className="text-[9px] px-2 py-0.5 rounded bg-[#16281F] text-[#19F59A] font-bold">
                   PHASE 11

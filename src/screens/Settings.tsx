@@ -41,7 +41,7 @@ type SettingsSection =
   | 'INTELLIGENCE'
   | 'WORKSPACE'
   | 'SECURITY'
-  | 'ABOUT JARVIS';
+  | 'ABOUT ZORO';
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { currentSession, logout, isSupabase, createNotification, trackEvent } = useAuth();
@@ -52,7 +52,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [settings, setSettings] = useState<SettingsType>(() =>
     getLocalStore<SettingsType>(`settings_${userId}`, {
       user_id: userId,
-      assistant_name: 'JARVIS',
+      assistant_name: 'ZORO',
       response_mode: 'TACTICAL',
       voice_enabled: true,
       voice_rate: 1.0,
@@ -150,7 +150,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     { section: 'INTELLIGENCE', label: 'Intelligence', icon: <TrendingUp className="w-3.5 h-3.5 text-[#38E1FF]" /> },
     { section: 'WORKSPACE', label: 'Workspace', icon: <Monitor className="w-3.5 h-3.5 text-[#38E1FF]" /> },
     { section: 'SECURITY', label: 'Security', icon: <Shield className="w-3.5 h-3.5 text-[#FF3B30]" /> },
-    { section: 'ABOUT JARVIS', label: 'About JARVIS', icon: <Info className="w-3.5 h-3.5 text-[#19F59A]" /> },
+    { section: 'ABOUT ZORO', label: 'About ZORO 2.0', icon: <Info className="w-3.5 h-3.5 text-[#19F59A]" /> },
   ];
 
   return (
@@ -163,7 +163,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             SYSTEM CONFIGURATION
           </h1>
           <p className="text-[10px] text-[#8B9992] mt-0.5">
-            JARVIS OS 1.0 • UNIFIED CONTROL & TELEMETRY DECK
+            ZORO 2.0 • AI COMMAND CENTER & TELEMETRY DECK
           </p>
         </div>
 
@@ -175,11 +175,11 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             </span>
           )}
           <button
-            onClick={() => onNavigate('/os')}
+            onClick={() => onNavigate('/command')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A100D] border border-[#16281F] text-[#8B9992] hover:text-[#19F59A] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>JARVIS OS</span>
+            <span>COMMAND CENTER</span>
           </button>
         </div>
       </div>
@@ -606,8 +606,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* 11. ABOUT JARVIS */}
-          {activeTab === 'ABOUT JARVIS' && (
+          {/* 11. ABOUT ZORO */}
+          {activeTab === 'ABOUT ZORO' && (
             <div className="p-5 rounded-2xl bg-[#0A100D] border border-[#00D084]/40 shadow-[0_0_20px_rgba(0,208,132,0.1)] space-y-4">
               <div className="flex items-center gap-3 border-b border-[#16281F] pb-3">
                 {/* Original Three Blade Motif */}
@@ -617,9 +617,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   <div className="w-1.5 h-6 bg-[#FFB000] -skew-x-12 rounded-xs shadow-[0_0_6px_#FFB000]" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-[#F5F7F6] tracking-wider">JARVIS OS</h2>
+                  <h2 className="text-base font-black text-[#F5F7F6] tracking-wider">ZORO 2.0</h2>
                   <p className="text-[10px] text-[#19F59A] font-bold tracking-widest">
-                    ZORO EDITION • THREE BLADES. ONE INTELLIGENCE.
+                    AI COMMAND CENTER • THREE BLADES. ONE INTELLIGENCE.
                   </p>
                 </div>
               </div>
@@ -627,12 +627,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[11px]">
                 <div className="p-3 rounded-xl bg-[#050706] border border-[#16281F]">
                   <span className="text-[9px] text-[#8B9992] block uppercase">Version</span>
-                  <span className="font-bold text-[#F5F7F6]">1.0.0</span>
+                  <span className="font-bold text-[#F5F7F6]">2.0.0</span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#050706] border border-[#16281F]">
                   <span className="text-[9px] text-[#8B9992] block uppercase">Edition</span>
-                  <span className="font-bold text-[#19F59A]">ZORO</span>
+                  <span className="font-bold text-[#19F59A]">ZORO COMMAND</span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#050706] border border-[#16281F]">

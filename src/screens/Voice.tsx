@@ -423,7 +423,7 @@ export const Voice: React.FC<VoiceProps> = ({ onNavigate }) => {
 
   // Sample tactical directives
   const sampleCommands = [
-    { text: 'JARVIS, show my active missions', cat: 'MISSIONS' },
+    { text: 'ZORO, show my active missions', cat: 'MISSIONS' },
     { text: 'What is my next tactical move?', cat: 'MISSIONS' },
     { text: 'Add task Calibrate Three Blades with high priority', cat: 'TASKS' },
     { text: 'Start a 25 minute focus session', cat: 'FOCUS' },
@@ -436,20 +436,20 @@ export const Voice: React.FC<VoiceProps> = ({ onNavigate }) => {
   const getVoiceStateLabel = () => {
     switch (voiceState) {
       case 'LISTENING':
-        return 'JARVIS CORE: LISTENING...';
+        return 'ZORO CORE: LISTENING...';
       case 'PROCESSING':
-        return 'JARVIS CORE: UNDERSTANDING...';
+        return 'ZORO CORE: UNDERSTANDING...';
       case 'EXECUTING':
-        return 'JARVIS CORE: EXECUTING...';
+        return 'ZORO CORE: EXECUTING...';
       case 'SPEAKING':
-        return 'JARVIS CORE: RESPONDING...';
+        return 'ZORO CORE: RESPONDING...';
       case 'PAUSED':
-        return 'JARVIS CORE: PAUSED';
+        return 'ZORO CORE: PAUSED';
       case 'ERROR':
-        return 'JARVIS CORE: ERROR';
+        return 'ZORO CORE: ERROR';
       case 'IDLE':
       default:
-        return 'JARVIS CORE: READY';
+        return 'ZORO CORE: READY';
     }
   };
 
@@ -861,12 +861,12 @@ export const Voice: React.FC<VoiceProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* JARVIS Zoro Response */}
+          {/* ZORO Response */}
           {aiResponse && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-[#38E1FF] tracking-wider">
-                  JARVIS ZORO SYNTHESIS RESPONSE:
+                  ZORO SYNTHESIS RESPONSE:
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -914,7 +914,7 @@ export const Voice: React.FC<VoiceProps> = ({ onNavigate }) => {
           type="text"
           value={manualInput}
           onChange={(e) => setManualInput(e.target.value)}
-          placeholder="Or type a voice command manually (e.g. 'JARVIS, show my active missions')..."
+          placeholder="Or type a voice command manually (e.g. 'ZORO, show my active missions')..."
           className="flex-1 bg-transparent text-[#F5F7F6] text-xs outline-none placeholder-[#8B9992]/60"
         />
         <button

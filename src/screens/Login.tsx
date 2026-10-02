@@ -50,7 +50,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-center gap-2">
               <Shield className="w-5 h-5 text-[#19F59A]" />
               <h1 className="text-xl font-black tracking-widest text-[#F5F7F6]">
-                JARVIS — ZORO EDITION
+                ZORO 2.0 — COMMAND CENTER
               </h1>
             </div>
             <p className="text-[10px] text-[#8B9992] tracking-widest">

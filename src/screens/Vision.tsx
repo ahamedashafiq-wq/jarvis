@@ -396,7 +396,7 @@ export const VisionScreen: React.FC<VisionProps> = ({ onNavigate }) => {
             </span>
             <div>
               <h1 className="text-xl font-black text-[#F5F7F6] tracking-wider flex items-center gap-2">
-                JARVIS VISION CORE
+                ZORO VISION CORE
                 <span className="text-[10px] px-2 py-0.5 rounded bg-[#00D084]/20 border border-[#00D084]/40 text-[#19F59A] font-bold">
                   PHASE 10
                 </span>
