@@ -16,6 +16,7 @@ import {
   Sparkles,
   AlertTriangle,
   Clock,
+  Mic,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { RoutePath, NotificationItem } from '../types';
@@ -24,9 +25,10 @@ import { useRealtime } from '../hooks/useRealtime';
 interface NavbarProps {
   onNavigate: (path: RoutePath) => void;
   currentPath: RoutePath;
+  onOpenVoiceHUD?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath, onOpenVoiceHUD }) => {
   const {
     currentSession,
     profile,
@@ -171,6 +173,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPath }) => {
             {isSupabase ? 'SUPABASE' : 'SANDBOX'}
           </span>
         </div>
+
+        {/* Global Voice HUD Trigger Button */}
+        <button
+          onClick={() => {
+            if (onOpenVoiceHUD) {
+              onOpenVoiceHUD();
+            } else {
+              onNavigate('/voice');
+            }
+          }}
+          className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-mono flex items-center gap-1.5 transition-all shadow-sm ${
+            currentPath === '/voice'
+              ? 'bg-[#121C17] border-[#00D084] text-[#19F59A] shadow-[0_0_10px_rgba(0,208,132,0.2)]'
+              : 'border-[#16281F] bg-[#050706] text-[#8B9992] hover:text-[#19F59A] hover:border-[#00D084]/50'
+          }`}
+          title="Engage Real-Time Voice AI (Ctrl + Space)"
+        >
+          <Mic className="w-3.5 h-3.5 text-[#19F59A] animate-pulse" />
+          <span className="font-bold hidden sm:inline">VOICE HUD</span>
+          <span className="text-[8px] px-1 py-0.2 rounded bg-[#00D084]/15 text-[#19F59A] hidden lg:inline font-mono">
+            ^SPACE
+          </span>
+        </button>
 
         {/* Telemetry Logs shortcut */}
         <button

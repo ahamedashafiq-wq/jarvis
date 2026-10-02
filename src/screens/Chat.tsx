@@ -10,6 +10,8 @@ import {
   validateIntent,
 } from '../services/intentRouter';
 import { MemoryService } from '../services/memory';
+import { MissionService } from '../services/mission';
+import { AgentCore } from '../services/agent';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import {
   Send,
@@ -28,6 +30,8 @@ import {
   Clock,
   Sparkles,
   AlertTriangle,
+  Check,
+  Target,
 } from 'lucide-react';
 import {
   Conversation,
@@ -37,6 +41,7 @@ import {
   Memory,
   AIOrbState,
   DetectedIntent,
+  AIMissionPlan,
 } from '../types';
 import { getLocalStore, setLocalStore } from '../services/supabase';
 import { realtimeService } from '../services/realtime';
@@ -163,9 +168,44 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     trackEvent('CONVERSATION_DELETED', JSON.stringify({ id }));
   };
 
+  const handleApprovePlanFromChat = (plan: AIMissionPlan) => {
+    const result = MissionService.approveAndCreatePlan(userId, plan);
+    showToast('MISSION CREATED', `Mission "${result.mission.title}" activated with ${result.objectives.length} objectives.`, 'MISSION');
+    createNotification('MISSION ACTIVATED', `Armed: ${result.mission.title}`, 'MISSION');
+
+    const confirmMsg: Message = {
+      id: 'ast_' + Date.now(),
+      conversation_id: activeConvId,
+      user_id: userId,
+      role: 'assistant',
+      content: `Mission "${result.mission.title}" has been successfully established and armed in Blade 02 Action Queue with ${result.objectives.length} sequenced objectives. All three blades synchronized for execution.`,
+      created_at: Date.now(),
+      intentTag: 'MISSION_CREATE: APPROVED',
+    };
+
+    setMessages((prev) => {
+      const updated = prev.map((m) => (m.pendingPlan ? { ...m, pendingPlan: undefined } : m));
+      const next = [...updated, confirmMsg];
+      setLocalStore(`msgs_${activeConvId}`, next);
+      return next;
+    });
+  };
+
   const handleSendPrompt = async (textToSend?: string) => {
     const prompt = (textToSend || input).trim();
     if (!prompt || isStreaming) return;
+
+    // Check if approving pending plan
+    const lowerPrompt = prompt.toLowerCase();
+    if (lowerPrompt === 'approve' || lowerPrompt === 'approve plan' || lowerPrompt === 'confirm plan') {
+      const lastWithPlan = [...messages].reverse().find((m) => m.pendingPlan);
+      if (lastWithPlan?.pendingPlan) {
+        setInput('');
+        handleApprovePlanFromChat(lastWithPlan.pendingPlan);
+        return;
+      }
+    }
+
     setInput('');
 
     const userMsg: Message = {
@@ -255,6 +295,52 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     let actionContext: string | undefined = undefined;
     let actionBadge: string | undefined = undefined;
 
+    const lower = prompt.toLowerCase();
+    const isAgentDirective =
+      lower.includes('organize') ||
+      lower.includes('prepare my') ||
+      lower.includes('orchestrate') ||
+      (lower.includes('create a mission') && (lower.includes('objective') || lower.includes('backend') || lower.includes('frontend')));
+
+    if (isAgentDirective) {
+      setOrbState('ANALYZING');
+      const agentResult = await AgentCore.startAgent({
+        id: 'req_chat_' + Date.now(),
+        user_id: userId,
+        message: prompt,
+        source: 'TEXT',
+        context: { conversation_id: activeConvId },
+        created_at: Date.now(),
+      });
+
+      setIsStreaming(false);
+      setOrbState(agentResult.status === 'COMPLETE' ? 'SUCCESS' : 'IDLE');
+
+      let replyContent = '';
+      if (agentResult.status === 'WAITING_FOR_APPROVAL') {
+        replyContent = `⚔️ **JARVIS ACTION PLAN PROPOSED**\n\n**Objective:** ${agentResult.plan.objective}\n\n**Proposed Actions (${agentResult.plan.steps.length}):**\n${agentResult.plan.steps.map((s, i) => `${i + 1}. **${s.tool.toUpperCase()}** — ${s.reason}`).join('\n')}\n\n**Risk Level:** ${agentResult.plan.risk_level}\n\n*Guardian Safety Gate: Operator approval is required before modifying application data. Open the Agent Command Deck to authorize.*`;
+      } else if (agentResult.status === 'COMPLETE') {
+        replyContent = `⚔️ **AGENT EXECUTION VERIFIED**\n\n${agentResult.result_summary || 'All actions executed and verified against storage.'}`;
+      } else {
+        replyContent = `⚠️ **AGENT EXECUTION NOTICE**\n\n${agentResult.failure_reason || 'Agent pipeline paused.'}`;
+      }
+
+      const agentMsg: Message = {
+        id: 'ast_' + Date.now(),
+        conversation_id: activeConvId,
+        user_id: userId,
+        role: 'assistant',
+        content: replyContent,
+        created_at: Date.now(),
+        intentTag: `AGENT: ${agentResult.status}`,
+      };
+
+      const finalMessages = [...updatedWithUser, agentMsg];
+      setMessages(finalMessages);
+      setLocalStore(`msgs_${activeConvId}`, finalMessages);
+      return;
+    }
+
     // 3. If intentional application command, execute safe action router
     if (detectedIntent.intent !== 'CHAT') {
       setOrbState('EXECUTING');
@@ -277,6 +363,52 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
           actionResult.message,
           'ALERT'
         );
+      }
+
+      // If MISSION_CREATE with pendingPlan, or direct telemetry queries, return exact verified message directly
+      if (detectedIntent.intent === 'MISSION_CREATE' && actionResult.data?.pendingPlan) {
+        setIsStreaming(false);
+        setOrbState('IDLE');
+        const planMsg: Message = {
+          id: 'ast_' + Date.now(),
+          conversation_id: activeConvId,
+          user_id: userId,
+          role: 'assistant',
+          content: actionResult.message,
+          created_at: Date.now(),
+          intentTag: 'MISSION_CREATE: PLAN READY',
+          pendingPlan: actionResult.data.pendingPlan,
+        };
+        const finalMessages = [...updatedWithUser, planMsg];
+        setMessages(finalMessages);
+        setLocalStore(`msgs_${activeConvId}`, finalMessages);
+        return;
+      }
+
+      if (
+        detectedIntent.intent === 'OBJECTIVE_COMPLETE' ||
+        detectedIntent.intent === 'MISSION_NEXT_MOVE' ||
+        detectedIntent.intent === 'MISSION_STATUS' ||
+        detectedIntent.intent === 'MISSION_LIST' ||
+        detectedIntent.intent === 'MISSION_OPEN' ||
+        detectedIntent.intent === 'MISSION_UPDATE' ||
+        detectedIntent.intent === 'MISSION_COMPLETE'
+      ) {
+        setIsStreaming(false);
+        setOrbState('SUCCESS');
+        const verifiedMsg: Message = {
+          id: 'ast_' + Date.now(),
+          conversation_id: activeConvId,
+          user_id: userId,
+          role: 'assistant',
+          content: actionResult.message,
+          created_at: Date.now(),
+          intentTag: actionBadge,
+        };
+        const finalMessages = [...updatedWithUser, verifiedMsg];
+        setMessages(finalMessages);
+        setLocalStore(`msgs_${activeConvId}`, finalMessages);
+        return;
       }
     } else {
       // Automatic memory extraction in background for general chat statements
@@ -515,6 +647,64 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
                       <span className="inline-block w-2 h-3.5 ml-1 bg-[#19F59A] animate-pulse" />
                     )}
                   </div>
+
+                  {/* Interactive Mission Plan Review Card (Section 9 & 31) */}
+                  {msg.pendingPlan && (
+                    <div className="mt-3 p-3.5 rounded-xl bg-[#050706] border border-[#19F59A]/30 space-y-3 font-mono">
+                      <div className="flex items-center justify-between text-[10px] text-[#19F59A] font-bold border-b border-[#16281F] pb-2">
+                        <div className="flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5 text-[#19F59A]" />
+                          <span>MISSION PLAN READY</span>
+                        </div>
+                        <span>{msg.pendingPlan.objectives.length} OBJECTIVES</span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="font-bold text-[#F5F7F6] text-xs">
+                          MISSION: {msg.pendingPlan.title}
+                        </div>
+                        <div className="text-[11px] text-[#8B9992] font-sans">
+                          GOAL: {msg.pendingPlan.goal}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-1">
+                        <div className="text-[10px] text-[#8B9992] font-bold uppercase">
+                          OBJECTIVES:
+                        </div>
+                        <div className="space-y-1 pl-1">
+                          {msg.pendingPlan.objectives.map((obj, i) => (
+                            <div key={i} className="flex items-center gap-2 text-[11px]">
+                              <span className="text-[#19F59A] font-bold">
+                                {String(i + 1).padStart(2, '0')}
+                              </span>
+                              <span className="text-[#8B9992]">—</span>
+                              <span className="text-[#F5F7F6] font-semibold">{obj.title}</span>
+                              <span className="text-[9px] text-[#8B9992]">({obj.priority})</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#16281F]">
+                        <button
+                          onClick={() => handleApprovePlanFromChat(msg.pendingPlan!)}
+                          className="px-4 py-1.5 rounded-lg bg-[#19F59A] text-[#050706] font-bold text-xs hover:bg-[#00D084] transition-all flex items-center gap-1.5 shadow-[0_0_10px_rgba(25,245,154,0.3)]"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>APPROVE PLAN</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            onNavigate('/missions');
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-[#0A100D] border border-[#16281F] text-[#8B9992] hover:text-[#F5F7F6] text-xs transition-colors"
+                        >
+                          EDIT IN MISSION CONTROL
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Footer metadata */}
                   <div className="flex items-center justify-between text-[9px] text-[#8B9992] pt-1">

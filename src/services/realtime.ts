@@ -134,6 +134,21 @@ class RealtimeService {
         { event: '*', schema: 'public', table: 'system_events', filter: `user_id=eq.${userId}` },
         (payload) => this.mapPostgresChangeToEvent('SYSTEM_EVENT', payload)
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'missions', filter: `user_id=eq.${userId}` },
+        (payload) => this.mapPostgresChangeToEvent('MISSION', payload)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'mission_objectives', filter: `user_id=eq.${userId}` },
+        (payload) => this.mapPostgresChangeToEvent('OBJECTIVE', payload)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'mission_activity', filter: `user_id=eq.${userId}` },
+        (payload) => this.mapPostgresChangeToEvent('MISSION_ACTIVITY', payload)
+      )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           this.setConnectionStatus('CONNECTED');
@@ -174,6 +189,18 @@ class RealtimeService {
       realtimeType = 'COMMAND_RECORDED';
     } else if (domain === 'NOTIFICATION') {
       realtimeType = 'NOTIFICATION_CREATED';
+    } else if (domain === 'MISSION') {
+      if (eventType === 'INSERT') realtimeType = 'MISSION_CREATED';
+      else if (eventType === 'UPDATE') {
+        realtimeType = payload.new?.status === 'COMPLETED' ? 'MISSION_COMPLETED' : 'MISSION_UPDATED';
+      } else if (eventType === 'DELETE') realtimeType = 'MISSION_DELETED';
+    } else if (domain === 'OBJECTIVE') {
+      if (eventType === 'INSERT') realtimeType = 'OBJECTIVE_CREATED';
+      else if (eventType === 'UPDATE') {
+        realtimeType = payload.new?.status === 'COMPLETED' ? 'OBJECTIVE_COMPLETED' : 'OBJECTIVE_UPDATED';
+      } else if (eventType === 'DELETE') realtimeType = 'OBJECTIVE_DELETED';
+    } else if (domain === 'MISSION_ACTIVITY') {
+      realtimeType = 'MISSION_ACTIVITY_CREATED';
     }
 
     const event: RealtimeEvent = {

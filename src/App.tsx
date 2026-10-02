@@ -4,12 +4,14 @@ import { RoutePath } from './types';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { AIOrb } from './components/AIOrb';
+import { GlobalVoiceHUD } from './components/GlobalVoiceHUD';
 
 import { Login } from './screens/Login';
 import { Signup } from './screens/Signup';
 import { ForgotPassword } from './screens/ForgotPassword';
 import { BootScreen } from './screens/Boot';
 import { Dashboard } from './screens/Dashboard';
+import { Missions } from './screens/Missions';
 import { Chat } from './screens/Chat';
 import { Voice } from './screens/Voice';
 import { Tasks } from './screens/Tasks';
@@ -20,10 +22,13 @@ import { Analytics } from './screens/Analytics';
 import { LogsScreen } from './screens/Logs';
 import { Settings } from './screens/Settings';
 import { Profile } from './screens/Profile';
+import { Agents } from './screens/Agents';
+import { AgentCouncil } from './screens/AgentCouncil';
 
 export const App: React.FC = () => {
   const { authState, currentSession, isBootComplete, completeBoot } = useAuth();
   const [currentPath, setCurrentPath] = useState<RoutePath>('/dashboard');
+  const [isVoiceHUDOpen, setIsVoiceHUDOpen] = useState(false);
 
   // Handle URL hash routing or initial route detection
   useEffect(() => {
@@ -37,6 +42,24 @@ export const App: React.FC = () => {
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
+
+  // Global Ctrl + Space listener to open Voice HUD from any screen
+  useEffect(() => {
+    const handleGlobalVoiceKey = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+      if (e.code === 'Space' && (e.ctrlKey || e.metaKey)) {
+        if (currentPath !== '/voice') {
+          e.preventDefault();
+          setIsVoiceHUDOpen((prev) => !prev);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalVoiceKey);
+    return () => window.removeEventListener('keydown', handleGlobalVoiceKey);
+  }, [currentPath]);
 
   const navigate = (path: RoutePath) => {
     setCurrentPath(path);
@@ -79,6 +102,12 @@ export const App: React.FC = () => {
   // 4. Authenticated Application Shell with Protected Routes
   const renderScreen = () => {
     switch (currentPath) {
+      case '/missions':
+        return <Missions onNavigate={navigate} />;
+      case '/agents':
+        return <Agents onNavigate={navigate} />;
+      case '/agents/council':
+        return <AgentCouncil onNavigate={navigate} />;
       case '/chat':
         return <Chat onNavigate={navigate} />;
       case '/voice':
@@ -107,23 +136,34 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#050706] flex flex-col text-[#F5F7F6]">
-      <Navbar onNavigate={navigate} currentPath={currentPath} />
+      <Navbar
+        onNavigate={navigate}
+        currentPath={currentPath}
+        onOpenVoiceHUD={() => setIsVoiceHUDOpen(true)}
+      />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar currentPath={currentPath} onNavigate={navigate} />
         <main className="flex-1 overflow-y-auto">{renderScreen()}</main>
       </div>
+
+      {/* Global Voice Synapse HUD Modal */}
+      <GlobalVoiceHUD
+        isOpen={isVoiceHUDOpen}
+        onClose={() => setIsVoiceHUDOpen(false)}
+        onNavigate={navigate}
+      />
 
       {/* Mobile Bottom Navigation Bar */}
       <div className="md:hidden flex items-center justify-around border-t border-[#16281F] bg-[#0A100D] py-2 px-1 sticky bottom-0 z-40 text-[10px] font-mono">
         {(
           [
             { path: '/dashboard', label: 'DASH' },
+            { path: '/missions', label: 'MISSIONS' },
             { path: '/chat', label: 'CHAT' },
-            { path: '/voice', label: 'VOICE' },
             { path: '/tasks', label: 'TASKS' },
+            { path: '/memory', label: 'MEM' },
             { path: '/focus', label: 'FOCUS' },
-            { path: '/commands', label: 'CLI' },
-            { path: '/profile', label: 'PROFILE' },
+            { path: '/profile', label: 'OPERATOR' },
           ] as const
         ).map((m) => (
           <button

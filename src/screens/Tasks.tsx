@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Task, RoutePath } from '../types';
 import { useRealtimeTasks } from '../hooks/useRealtime';
 import { useToast } from '../components/Toast';
-import { CheckCircle, Circle, Plus, Trash2, Tag, Calendar, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Circle, Plus, Trash2, Tag, Calendar, AlertTriangle, ArrowLeft, Target } from 'lucide-react';
 
 interface TasksProps {
   onNavigate: (path: RoutePath) => void;
@@ -87,6 +87,13 @@ export const Tasks: React.FC<TasksProps> = ({ onNavigate }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate('/missions')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#0A100D] border border-[#16281F] text-[#19F59A] hover:border-[#19F59A]/40 transition-colors"
+          >
+            <Target className="w-3.5 h-3.5" />
+            <span>MISSION CONTROL</span>
+          </button>
           <button
             onClick={() => onNavigate('/dashboard')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#0A100D] border border-[#16281F] text-[#8B9992] hover:text-[#19F59A] transition-colors"
@@ -202,6 +209,12 @@ export const Tasks: React.FC<TasksProps> = ({ onNavigate }) => {
                 </p>
 
                 <div className="flex items-center gap-3 pt-1 text-[10px] text-[#8B9992]">
+                  {t.mission_id && (
+                    <span className="flex items-center gap-1 text-[#19F59A]">
+                      <Target className="w-3 h-3" />
+                      <span>MISSION DIRECTIVE</span>
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <Tag className="w-3 h-3 text-[#38E1FF]" />
                     {t.category}

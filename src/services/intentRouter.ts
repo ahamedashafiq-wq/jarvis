@@ -8,8 +8,11 @@ import {
   Task,
   Settings,
   CommandLog,
+  AIMissionPlan,
+  Mission,
 } from '../types';
 import { MemoryService, isSecretOrSensitive } from './memory';
+import { MissionService } from './mission';
 import { getLocalStore, setLocalStore } from './supabase';
 import { realtimeService } from './realtime';
 
@@ -21,8 +24,16 @@ const ai = isGeminiConfigured ? new GoogleGenAI({ apiKey }) : null;
 export const ALLOWED_NAVIGATION_ROUTES: Record<string, RoutePath> = {
   home: '/dashboard',
   dashboard: '/dashboard',
+  missions: '/missions',
+  mission: '/missions',
+  'mission control': '/missions',
   chat: '/chat',
   voice: '/voice',
+  agents: '/agents',
+  agent: '/agents',
+  'agent brain': '/agents',
+  'agent council': '/agents/council',
+  council: '/agents/council',
   memory: '/memory',
   memories: '/memory',
   tasks: '/tasks',
@@ -66,6 +77,14 @@ const INTENT_SCHEMA: Schema = {
         'TASK_DELETE',
         'TASK_COMPLETE',
         'TASK_LIST',
+        'MISSION_CREATE',
+        'MISSION_LIST',
+        'MISSION_OPEN',
+        'MISSION_UPDATE',
+        'MISSION_COMPLETE',
+        'OBJECTIVE_COMPLETE',
+        'MISSION_NEXT_MOVE',
+        'MISSION_STATUS',
         'FOCUS_START',
         'FOCUS_STOP',
         'ANALYTICS_QUERY',
@@ -95,6 +114,9 @@ const INTENT_SCHEMA: Schema = {
         route: { type: Type.STRING },
         settingKey: { type: Type.STRING },
         settingValue: { type: Type.STRING },
+        action: { type: Type.STRING },
+        missionId: { type: Type.STRING },
+        objectiveId: { type: Type.STRING },
       },
     },
     explanation: {
@@ -163,7 +185,8 @@ export function detectIntentHeuristics(text: string): DetectedIntent {
       .replace(/^(screen|page|view)/i, '')
       .trim();
 
-    if (target.includes('task')) target = 'tasks';
+    if (target.includes('mission')) target = 'missions';
+    else if (target.includes('task')) target = 'tasks';
     else if (target.includes('memory') || target.includes('memories')) target = 'memory';
     else if (target.includes('analytic')) target = 'analytics';
     else if (target.includes('setting')) target = 'settings';
@@ -181,6 +204,167 @@ export function detectIntentHeuristics(text: string): DetectedIntent {
         explanation: `Explicit navigation request to ${ALLOWED_NAVIGATION_ROUTES[target]}`,
       };
     }
+  }
+
+  // 1b. Mission Next Move intent (e.g. "What should I do next?", "What's my next move?", "Next move")
+  if (
+    lower === "what should i do next?" ||
+    lower === "what should i do next" ||
+    lower === "what's my next move?" ||
+    lower === "what's my next move" ||
+    lower === "what is my next move?" ||
+    lower === "what is my next move" ||
+    lower === "next move" ||
+    lower === "whats my next move" ||
+    lower.includes("what's my next move") ||
+    lower.includes("what is my next move") ||
+    lower.includes("what should i do next")
+  ) {
+    return {
+      intent: 'MISSION_NEXT_MOVE',
+      confidence: 0.99,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Signature directive: Next Move Engine query',
+    };
+  }
+
+  // 1c. Objective Complete intent (e.g. "Complete the Research objective", "Complete objective Research", "Complete the backend objective")
+  if (
+    (lower.includes('complete the ') && lower.includes('objective')) ||
+    (lower.includes('complete objective') || lower.includes('finish objective')) ||
+    (lower.startsWith('mark objective ') && lower.includes('complete'))
+  ) {
+    let clean = raw
+      .replace(/^(complete the |complete objective |finish objective |complete |finish |mark objective )/i, '')
+      .replace(/ (objective as completed|objective completed|objective as done|objective)$/i, '')
+      .replace(/["']/g, '')
+      .trim();
+
+    return {
+      intent: 'OBJECTIVE_COMPLETE',
+      confidence: 0.98,
+      parameters: { title: clean },
+      rawMessage: raw,
+      explanation: `Directive to mark objective "${clean}" as complete`,
+    };
+  }
+
+  // 1d. Mission Status / Progress intent (e.g. "How is my AI project going?", "How much progress have I made?", "Mission status")
+  if (
+    lower.includes('how is my') && (lower.includes('going') || lower.includes('doing') || lower.includes('progress')) ||
+    lower.includes('how much progress have i made') ||
+    lower === 'mission status' ||
+    lower === 'show mission status' ||
+    lower.startsWith('status of mission')
+  ) {
+    const cleanTarget = raw
+      .replace(/^(how is my |how is the |how much progress have i made on |status of mission )/i, '')
+      .replace(/ (going\??|doing\??|progress\??)$/i, '')
+      .replace(/["']/g, '')
+      .trim();
+
+    return {
+      intent: 'MISSION_STATUS',
+      confidence: 0.96,
+      parameters: { title: cleanTarget },
+      rawMessage: raw,
+      explanation: 'Inquiry into real mission telemetry and explainable progress metrics',
+    };
+  }
+
+  // 1e. Mission Create / Plan intent (e.g. "Create a mission called AI Assistant", "Create a mission for my AI project", "Plan a mission for...")
+  if (
+    lower.startsWith('create a mission') ||
+    lower.startsWith('create mission') ||
+    lower.startsWith('plan a mission') ||
+    lower.startsWith('plan mission') ||
+    lower.startsWith('i want to finish my') ||
+    lower.startsWith('i want to build an ai') ||
+    lower.startsWith('i need to build an ai') ||
+    lower.startsWith('new mission')
+  ) {
+    let cleanTitle = raw
+      .replace(/^(create a mission (?:called |named |for )?|create mission (?:called |named |for )?|plan a mission (?:for )?|plan mission (?:for )?|i want to finish my |i want to build an? |i need to build an? |new mission:? ?)/i, '')
+      .replace(/^["']|["']$/g, '')
+      .trim();
+
+    return {
+      intent: 'MISSION_CREATE',
+      confidence: 0.98,
+      parameters: { title: cleanTitle || 'AI Assistant', prompt: raw },
+      rawMessage: raw,
+      explanation: `Directive to synthesize structured mission plan for "${cleanTitle || raw}"`,
+    };
+  }
+
+  // 1f. Mission List intent (e.g. "Show my active missions", "List missions")
+  if (
+    lower === 'show my active missions' ||
+    lower === 'show active missions' ||
+    lower === 'show my missions' ||
+    lower === 'list my missions' ||
+    lower === 'list missions' ||
+    lower === 'show missions' ||
+    lower === 'what are my missions' ||
+    lower === 'what are my missions?'
+  ) {
+    return {
+      intent: 'MISSION_LIST',
+      confidence: 0.98,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Query active missions in Blade 02 queue',
+    };
+  }
+
+  // 1g. Mission Open intent (e.g. "Open my AI project", "Open mission AI Assistant")
+  if (
+    (lower.startsWith('open my ') && (lower.includes('project') || lower.includes('mission') || lower.includes('assistant'))) ||
+    lower.startsWith('open mission ')
+  ) {
+    const cleanTarget = raw.replace(/^(open my |open mission )/i, '').replace(/ (mission|project)$/i, '').trim();
+    return {
+      intent: 'MISSION_OPEN',
+      confidence: 0.97,
+      parameters: { title: cleanTarget },
+      rawMessage: raw,
+      explanation: `Navigate to mission "${cleanTarget}"`,
+    };
+  }
+
+  // 1h. Mission Update intent (e.g. "Pause my AI project", "Resume my AI project")
+  if (
+    lower.startsWith('pause my ') ||
+    lower.startsWith('pause mission ') ||
+    lower.startsWith('resume my ') ||
+    lower.startsWith('resume mission ')
+  ) {
+    const action = lower.startsWith('resume') ? 'RESUME' : 'PAUSE';
+    const cleanTarget = raw.replace(/^(pause my |pause mission |resume my |resume mission )/i, '').replace(/ (mission|project)$/i, '').trim();
+    return {
+      intent: 'MISSION_UPDATE',
+      confidence: 0.96,
+      parameters: { title: cleanTarget, action },
+      rawMessage: raw,
+      explanation: `Directive to ${action} mission "${cleanTarget}"`,
+    };
+  }
+
+  // 1i. Mission Complete intent (e.g. "Complete my AI project", "Complete mission AI Assistant")
+  if (
+    lower.startsWith('complete my mission') ||
+    lower.startsWith('complete mission ') ||
+    lower.startsWith('finish mission ')
+  ) {
+    const cleanTarget = raw.replace(/^(complete my mission |complete mission |finish mission )/i, '').replace(/ (mission|project)$/i, '').trim();
+    return {
+      intent: 'MISSION_COMPLETE',
+      confidence: 0.96,
+      parameters: { title: cleanTarget },
+      rawMessage: raw,
+      explanation: `Directive to mark mission "${cleanTarget}" as completed`,
+    };
   }
 
   // 2. Memory Delete / Forget intent (e.g., "Forget that my favorite language is Python", "Forget my project deadline", "Delete that memory")
@@ -829,10 +1013,38 @@ export function validateIntent(
     case 'CHAT':
     case 'MEMORY_READ':
     case 'TASK_LIST':
+    case 'MISSION_LIST':
+    case 'MISSION_NEXT_MOVE':
+    case 'MISSION_STATUS':
+    case 'MISSION_OPEN':
+    case 'MISSION_UPDATE':
+    case 'MISSION_COMPLETE':
     case 'FOCUS_STOP':
     case 'SYSTEM_STATUS':
     case 'ANALYTICS_QUERY':
       return { isValid: true, sanitizedParams: parameters };
+
+    case 'OBJECTIVE_COMPLETE': {
+      const title = (parameters.title || '').trim();
+      if (!title) {
+        return {
+          isValid: false,
+          promptUser: 'Which objective would you like to mark as completed?',
+        };
+      }
+      return { isValid: true, sanitizedParams: { title } };
+    }
+
+    case 'MISSION_CREATE': {
+      const title = (parameters.title || '').trim();
+      return {
+        isValid: true,
+        sanitizedParams: {
+          title: title || 'Tactical Mission',
+          prompt: parameters.prompt || title || 'Mission',
+        },
+      };
+    }
 
     default:
       return {
@@ -1203,6 +1415,258 @@ export async function executeIntent(
         };
         recordCommandLog(userId, commandLog);
         return { success: true, message: msg, data: updatedSettings, commandLog };
+      }
+
+      case 'OBJECTIVE_COMPLETE': {
+        const queryTitle = (params.title || '').toLowerCase().trim();
+        const activeMissions = MissionService.getMissions(userId).filter((m) => m.status === 'ACTIVE');
+        const allObjectives = MissionService.getObjectives(userId);
+
+        // First search within active missions
+        let matchedObj = allObjectives.find((o) => {
+          const parentActive = activeMissions.some((m) => m.id === o.mission_id);
+          return parentActive && o.title.toLowerCase().includes(queryTitle) && o.status !== 'COMPLETED';
+        });
+
+        // Fallback: search all objectives
+        if (!matchedObj) {
+          matchedObj = allObjectives.find(
+            (o) => o.title.toLowerCase().includes(queryTitle) && o.status !== 'COMPLETED'
+          );
+        }
+
+        const execTime = Math.round(performance.now() - startTime);
+
+        if (!matchedObj) {
+          const failMsg = `No active objective matching "${params.title}" was located in your missions.`;
+          commandLog = {
+            ...commandLog,
+            status: 'FAILED',
+            result: failMsg,
+            execution_time: execTime,
+          };
+          recordCommandLog(userId, commandLog);
+          return { success: false, message: failMsg, commandLog };
+        }
+
+        // Mark objective completed
+        const updatedObj = MissionService.updateObjective(userId, matchedObj.id, {
+          status: 'COMPLETED',
+          progress: 100,
+        });
+
+        const updatedMission = MissionService.recalculateMissionProgress(userId, matchedObj.mission_id);
+        const parentMission = MissionService.getMissionById(userId, matchedObj.mission_id);
+
+        const okMsg = `Mission progress updated. Objective '${matchedObj.title}' marked as COMPLETED. Overall progress on ${parentMission?.title || 'mission'} is now ${updatedMission?.progress || 100}%.`;
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: okMsg,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+
+        return {
+          success: true,
+          message: okMsg,
+          data: { objective: updatedObj, mission: updatedMission },
+          commandLog,
+        };
+      }
+
+      case 'MISSION_NEXT_MOVE': {
+        const nextMove = MissionService.computeNextMove(userId);
+        const execTime = Math.round(performance.now() - startTime);
+
+        let report = '';
+        if (!nextMove) {
+          report = 'No active missions found in Blade 02. Deploy a new mission with "Plan a mission called..." to engage the Next Move engine.';
+        } else {
+          report = `NEXT MOVE\n\n${nextMove.action}\n\nWHY?\n${nextMove.reason.join('\n')}`;
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: nextMove, commandLog };
+      }
+
+      case 'MISSION_STATUS': {
+        const missions = MissionService.getMissions(userId);
+        let targetMission: Mission | undefined;
+
+        if (params.title) {
+          const q = params.title.toLowerCase();
+          targetMission = missions.find((m) => m.title.toLowerCase().includes(q));
+        }
+
+        if (!targetMission) {
+          targetMission = missions.find((m) => m.status === 'ACTIVE') || missions[0];
+        }
+
+        const execTime = Math.round(performance.now() - startTime);
+
+        if (!targetMission) {
+          const noMsn = 'No active missions found in Blade 02 matrix. Say "Create a mission for..." to start one.';
+          commandLog = {
+            ...commandLog,
+            status: 'SUCCESS',
+            result: noMsn,
+            execution_time: execTime,
+          };
+          recordCommandLog(userId, commandLog);
+          return { success: true, message: noMsn, commandLog };
+        }
+
+        const detail = MissionService.calculateMissionProgress(userId, targetMission.id);
+        const focusSessions = getLocalStore<any[]>(`focus_sessions_${userId}`, []).filter(
+          (s) => s.mission_id === targetMission!.id && s.status === 'COMPLETED'
+        );
+        const blockerReport = MissionService.detectMissionBlockers(userId, targetMission.id);
+        const attention = blockerReport.hasBlockers
+          ? blockerReport.blockedObjectives[0].reason
+          : 'All systems nominal with zero active blockers.';
+
+        const statusReport = `${targetMission.title.toUpperCase()}\n\nProgress:\n${detail.percentage}%\n\nObjectives:\n${detail.completedObjectives} / ${detail.totalObjectives} completed\n\nTasks:\n${detail.completedTasks} / ${detail.totalTasks} completed\n\nFocus:\n${focusSessions.length} sessions\n\nDeadline:\n${targetMission.deadline}\n\nAttention:\n${attention}`;
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: statusReport,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: statusReport, data: { mission: targetMission, detail }, commandLog };
+      }
+
+      case 'MISSION_CREATE': {
+        const userPrompt = params.prompt || params.title || 'AI Assistant';
+        const plan = await MissionService.generateMissionPlan(userPrompt);
+        const execTime = Math.round(performance.now() - startTime);
+
+        const planMessage = `MISSION PLAN READY\n\nMISSION:\n${plan.title}\n\nGOAL:\n${plan.goal}\n\nOBJECTIVES:\n${plan.objectives
+          .map((o, i) => `${String(i + 1).padStart(2, '0')} — ${o.title}`)
+          .join('\n')}\n\nReview and select [APPROVE PLAN] to arm this operational structure.`;
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: planMessage,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+
+        return {
+          success: true,
+          message: planMessage,
+          data: { pendingPlan: plan },
+          commandLog,
+        };
+      }
+
+      case 'MISSION_LIST': {
+        const missions = MissionService.getMissions(userId);
+        const active = missions.filter((m) => m.status === 'ACTIVE');
+        const execTime = Math.round(performance.now() - startTime);
+
+        let report = '';
+        if (active.length === 0) {
+          report = 'No active missions in queue. Blade 02 stands ready for new directives.';
+        } else {
+          report =
+            `Blade 02 holds ${active.length} active missions:\n` +
+            active
+              .map(
+                (m) =>
+                  `• ${m.title} [${m.priority}] — ${m.progress}% complete (Deadline: ${m.deadline})`
+              )
+              .join('\n');
+        }
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: active, commandLog };
+      }
+
+      case 'MISSION_OPEN': {
+        const missions = MissionService.getMissions(userId);
+        const q = (params.title || '').toLowerCase();
+        const target = missions.find((m) => m.title.toLowerCase().includes(q)) || missions[0];
+
+        const execTime = Math.round(performance.now() - startTime);
+        if (target) {
+          window.location.hash = `/missions?id=${target.id}`;
+          if (onNavigate) onNavigate('/missions');
+          const msg = `Navigating to Mission: "${target.title}"...`;
+          commandLog = { ...commandLog, status: 'SUCCESS', result: msg, execution_time: execTime };
+          recordCommandLog(userId, commandLog);
+          return { success: true, message: msg, data: target, commandLog };
+        } else {
+          if (onNavigate) onNavigate('/missions');
+          const msg = `Navigating to Mission Control...`;
+          commandLog = { ...commandLog, status: 'SUCCESS', result: msg, execution_time: execTime };
+          recordCommandLog(userId, commandLog);
+          return { success: true, message: msg, commandLog };
+        }
+      }
+
+      case 'MISSION_UPDATE': {
+        const missions = MissionService.getMissions(userId);
+        const q = (params.title || '').toLowerCase();
+        const target = missions.find((m) => m.title.toLowerCase().includes(q));
+        const execTime = Math.round(performance.now() - startTime);
+
+        if (!target) {
+          const msg = `Mission "${params.title}" not located.`;
+          commandLog = { ...commandLog, status: 'FAILED', result: msg, execution_time: execTime };
+          recordCommandLog(userId, commandLog);
+          return { success: false, message: msg, commandLog };
+        }
+
+        const isPause = params.action === 'PAUSE' || target.status === 'ACTIVE';
+        const nextStatus = isPause ? 'PAUSED' : 'ACTIVE';
+        const updated = MissionService.updateMission(userId, target.id, { status: nextStatus });
+        const msg = `Mission "${target.title}" is now ${nextStatus}.`;
+
+        commandLog = { ...commandLog, status: 'SUCCESS', result: msg, execution_time: execTime };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: msg, data: updated, commandLog };
+      }
+
+      case 'MISSION_COMPLETE': {
+        const missions = MissionService.getMissions(userId);
+        const q = (params.title || '').toLowerCase();
+        const target = missions.find((m) => m.title.toLowerCase().includes(q));
+        const execTime = Math.round(performance.now() - startTime);
+
+        if (!target) {
+          const msg = `Mission "${params.title}" not located.`;
+          commandLog = { ...commandLog, status: 'FAILED', result: msg, execution_time: execTime };
+          recordCommandLog(userId, commandLog);
+          return { success: false, message: msg, commandLog };
+        }
+
+        const updated = MissionService.updateMission(userId, target.id, {
+          status: 'COMPLETED',
+          progress: 100,
+          completed_at: Date.now(),
+        });
+        const msg = `Mission complete. "${target.title}" marked as COMPLETED at 100% clearance rate.`;
+
+        commandLog = { ...commandLog, status: 'SUCCESS', result: msg, execution_time: execTime };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: msg, data: updated, commandLog };
       }
 
       case 'NAVIGATION': {

@@ -22,6 +22,8 @@ import {
   Wifi,
   WifiOff,
   Flame,
+  Target,
+  Zap,
 } from 'lucide-react';
 import { Task, Memory, RoutePath, AIOrbState } from '../types';
 import {
@@ -30,7 +32,9 @@ import {
   useRealtimeMemories,
   useRealtimeCommands,
   useRealtimeNotifications,
+  useRealtimeMissions,
 } from '../hooks/useRealtime';
+import { MissionService } from '../services/mission';
 import { useToast } from '../components/Toast';
 
 interface DashboardProps {
@@ -46,8 +50,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { tasks, toggleTask } = useRealtimeTasks();
   const { memories } = useRealtimeMemories();
   const { commands } = useRealtimeCommands();
+  const { missions } = useRealtimeMissions();
   const { unreadCount } = useRealtimeNotifications();
   const { connectionStatus, networkStatus, isConnected, isOnline } = useRealtime();
+
+  const nextMove = React.useMemo(() => {
+    return MissionService.computeNextMove(userId);
+  }, [userId, missions, tasks]);
 
   const [orbState, setOrbState] = useState<AIOrbState>('IDLE');
   const [quickInput, setQuickInput] = useState('');
@@ -159,6 +168,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             />
           </div>
         </div>
+      </div>
+
+      {/* PHASE 6: MISSION CONTROL OS & NEXT MOVE HERO WIDGET */}
+      <div className="p-5 rounded-2xl bg-[#0A100D] border border-[#16281F] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[#19F59A]/15 border border-[#19F59A] flex items-center justify-center shrink-0">
+            <Target className="w-5 h-5 text-[#19F59A]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-[#19F59A] tracking-wider uppercase">
+                MISSION CONTROL OS
+              </span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#16281F] text-[#8B9992] font-mono">
+                {missions.filter((m) => m.status === 'ACTIVE').length} ACTIVE MISSIONS
+              </span>
+            </div>
+            <div className="font-bold text-sm text-[#F5F7F6]">
+              {nextMove ? (
+                <span className="flex items-center gap-1.5 text-xs text-[#38E1FF]">
+                  <Zap className="w-3.5 h-3.5 animate-pulse" />
+                  NEXT MOVE: {nextMove.action}
+                </span>
+              ) : (
+                'Command your objectives. Hierarchy: Goal → Mission → Objectives → Tasks.'
+              )}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigate('/missions')}
+          className="px-4 py-2 rounded-xl bg-[#19F59A] text-[#050706] font-bold text-xs hover:bg-[#00D084] transition-all shrink-0 flex items-center gap-1.5 shadow-[0_0_15px_rgba(25,245,154,0.25)]"
+        >
+          <span>ENTER MISSION CONTROL</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Three Blades Live Status Architecture */}

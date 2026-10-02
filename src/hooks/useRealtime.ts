@@ -3,6 +3,9 @@ import {
   CommandLog,
   Memory,
   Message,
+  Mission,
+  MissionActivity,
+  MissionObjective,
   NetworkStatus,
   NotificationItem,
   RealtimeEvent,
@@ -12,6 +15,7 @@ import {
 } from '../types';
 import { realtimeService } from '../services/realtime';
 import { getLocalStore, setLocalStore } from '../services/supabase';
+import { MissionService } from '../services/mission';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -154,6 +158,11 @@ export function useRealtimeTasks() {
             (changedTask as Task).status === 'COMPLETED' ? 'TASK_COMPLETED' : 'TASK_UPDATED',
             changedTask
           );
+
+          // If linked to mission, sync mission progress immediately
+          if ((changedTask as Task).mission_id) {
+            MissionService.recalculateMissionProgress(userId, (changedTask as Task).mission_id!);
+          }
         }
         return updated;
       });
@@ -316,9 +325,15 @@ export function useRealtimeCommands() {
     [userId]
   );
 
+  const clearCommands = useCallback(() => {
+    setCommands([]);
+    setLocalStore(`cmds_${userId}`, []);
+  }, [userId]);
+
   return {
     commands,
     recordCommand,
+    clearCommands,
     reloadCommands,
   };
 }
@@ -418,6 +433,12 @@ export function useRealtimeNotifications() {
     [userId]
   );
 
+  const clearAll = useCallback(() => {
+    setNotifications([]);
+    setLocalStore(`notifications_${userId}`, []);
+    realtimeService.broadcast('NOTIFICATIONS_READ_ALL', {});
+  }, [userId]);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return {
@@ -426,6 +447,7 @@ export function useRealtimeNotifications() {
     markAsRead,
     markAllAsRead,
     dismiss,
+    clearAll,
     reloadNotifications,
   };
 }
@@ -489,5 +511,285 @@ export function useRealtimeSystemEvents() {
     systemEvents,
     trackEvent,
     reloadEvents,
+  };
+}
+
+/**
+ * Hook for synchronized real-time Missions
+ */
+export function useRealtimeMissions() {
+  const { currentSession } = useAuth();
+  const userId = currentSession?.userId || 'guest';
+
+  const [missions, setMissions] = useState<Mission[]>(() =>
+    MissionService.getMissions(userId)
+  );
+
+  const reloadMissions = useCallback(() => {
+    setMissions(MissionService.getMissions(userId));
+  }, [userId]);
+
+  useEffect(() => {
+    reloadMissions();
+
+    const unsubCreated = realtimeService.subscribe('MISSION_CREATED', (e) => {
+      setMissions((prev) => {
+        const newMsn = e.payload as Mission;
+        if (prev.some((m) => m.id === newMsn.id)) return prev;
+        return [newMsn, ...prev];
+      });
+    });
+
+    const unsubUpdated = realtimeService.subscribe('MISSION_UPDATED', (e) => {
+      setMissions((prev) => {
+        const updatedMsn = e.payload as Mission;
+        return prev.map((m) => (m.id === updatedMsn.id ? updatedMsn : m));
+      });
+    });
+
+    const unsubCompleted = realtimeService.subscribe('MISSION_COMPLETED', (e) => {
+      setMissions((prev) => {
+        const completedMsn = e.payload as Mission;
+        return prev.map((m) => (m.id === completedMsn.id ? completedMsn : m));
+      });
+    });
+
+    const unsubDeleted = realtimeService.subscribe('MISSION_DELETED', (e) => {
+      setMissions((prev) => {
+        const deletedId = typeof e.payload === 'string' ? e.payload : e.payload?.id;
+        return prev.filter((m) => m.id !== deletedId);
+      });
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubCompleted();
+      unsubDeleted();
+    };
+  }, [userId, reloadMissions]);
+
+  const addMission = useCallback(
+    (data: Partial<Mission>) => {
+      const created = MissionService.createMission(userId, data);
+      reloadMissions();
+      return created;
+    },
+    [userId, reloadMissions]
+  );
+
+  const updateMission = useCallback(
+    (id: string, updates: Partial<Mission>) => {
+      const updated = MissionService.updateMission(userId, id, updates);
+      reloadMissions();
+      return updated;
+    },
+    [userId, reloadMissions]
+  );
+
+  const deleteMission = useCallback(
+    (id: string) => {
+      const ok = MissionService.deleteMission(userId, id);
+      reloadMissions();
+      return ok;
+    },
+    [userId, reloadMissions]
+  );
+
+  const togglePauseMission = useCallback(
+    (id: string) => {
+      const target = MissionService.getMissionById(userId, id);
+      if (!target) return null;
+      const nextStatus = target.status === 'PAUSED' ? 'ACTIVE' : 'PAUSED';
+      const updated = MissionService.updateMission(userId, id, { status: nextStatus });
+      reloadMissions();
+      return updated;
+    },
+    [userId, reloadMissions]
+  );
+
+  const completeMission = useCallback(
+    (id: string) => {
+      const updated = MissionService.updateMission(userId, id, {
+        status: 'COMPLETED',
+        progress: 100,
+        completed_at: Date.now(),
+      });
+      reloadMissions();
+      return updated;
+    },
+    [userId, reloadMissions]
+  );
+
+  return {
+    missions,
+    addMission,
+    updateMission,
+    deleteMission,
+    togglePauseMission,
+    completeMission,
+    reloadMissions,
+  };
+}
+
+/**
+ * Hook for synchronized real-time Objectives
+ */
+export function useRealtimeObjectives(missionId?: string) {
+  const { currentSession } = useAuth();
+  const userId = currentSession?.userId || 'guest';
+
+  const [objectives, setObjectives] = useState<MissionObjective[]>(() =>
+    MissionService.getObjectives(userId, missionId)
+  );
+
+  const reloadObjectives = useCallback(() => {
+    setObjectives(MissionService.getObjectives(userId, missionId));
+  }, [userId, missionId]);
+
+  useEffect(() => {
+    reloadObjectives();
+
+    const unsubCreated = realtimeService.subscribe('OBJECTIVE_CREATED', (e) => {
+      const newObj = e.payload as MissionObjective;
+      if (!missionId || newObj.mission_id === missionId) {
+        setObjectives((prev) => {
+          if (prev.some((o) => o.id === newObj.id)) return prev;
+          return [...prev, newObj].sort((a, b) => a.position - b.position);
+        });
+      }
+    });
+
+    const unsubUpdated = realtimeService.subscribe('OBJECTIVE_UPDATED', (e) => {
+      if (e.payload?.reordered) {
+        reloadObjectives();
+      } else {
+        const updatedObj = e.payload as MissionObjective;
+        if (!missionId || updatedObj.mission_id === missionId) {
+          setObjectives((prev) =>
+            prev.map((o) => (o.id === updatedObj.id ? updatedObj : o)).sort((a, b) => a.position - b.position)
+          );
+        }
+      }
+    });
+
+    const unsubCompleted = realtimeService.subscribe('OBJECTIVE_COMPLETED', (e) => {
+      const completedObj = e.payload as MissionObjective;
+      if (!missionId || completedObj.mission_id === missionId) {
+        setObjectives((prev) =>
+          prev.map((o) => (o.id === completedObj.id ? completedObj : o)).sort((a, b) => a.position - b.position)
+        );
+      }
+    });
+
+    const unsubDeleted = realtimeService.subscribe('OBJECTIVE_DELETED', (e) => {
+      const deletedId = typeof e.payload === 'string' ? e.payload : e.payload?.id;
+      setObjectives((prev) => prev.filter((o) => o.id !== deletedId));
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubCompleted();
+      unsubDeleted();
+    };
+  }, [userId, missionId, reloadObjectives]);
+
+  const addObjective = useCallback(
+    (data: Partial<MissionObjective>) => {
+      if (!missionId) return null;
+      const created = MissionService.createObjective(userId, missionId, data);
+      reloadObjectives();
+      return created;
+    },
+    [userId, missionId, reloadObjectives]
+  );
+
+  const updateObjective = useCallback(
+    (id: string, updates: Partial<MissionObjective>) => {
+      const updated = MissionService.updateObjective(userId, id, updates);
+      reloadObjectives();
+      return updated;
+    },
+    [userId, reloadObjectives]
+  );
+
+  const deleteObjective = useCallback(
+    (id: string) => {
+      const ok = MissionService.deleteObjective(userId, id);
+      reloadObjectives();
+      return ok;
+    },
+    [userId, reloadObjectives]
+  );
+
+  const toggleObjectiveStatus = useCallback(
+    (id: string) => {
+      const target = MissionService.getObjectiveById(userId, id);
+      if (!target) return null;
+      const nextStatus = target.status === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+      const updated = MissionService.updateObjective(userId, id, { status: nextStatus });
+      reloadObjectives();
+      return updated;
+    },
+    [userId, reloadObjectives]
+  );
+
+  const reorder = useCallback(
+    (orderedIds: string[]) => {
+      if (!missionId) return;
+      const reordered = MissionService.reorderObjectives(userId, missionId, orderedIds);
+      setObjectives(reordered);
+    },
+    [userId, missionId]
+  );
+
+  return {
+    objectives,
+    addObjective,
+    updateObjective,
+    deleteObjective,
+    toggleObjectiveStatus,
+    reorder,
+    reloadObjectives,
+  };
+}
+
+/**
+ * Hook for synchronized real-time Mission Activity
+ */
+export function useRealtimeMissionActivity(missionId?: string) {
+  const { currentSession } = useAuth();
+  const userId = currentSession?.userId || 'guest';
+
+  const [activities, setActivities] = useState<MissionActivity[]>(() =>
+    MissionService.getMissionActivities(userId, missionId)
+  );
+
+  const reloadActivities = useCallback(() => {
+    setActivities(MissionService.getMissionActivities(userId, missionId));
+  }, [userId, missionId]);
+
+  useEffect(() => {
+    reloadActivities();
+
+    const unsub = realtimeService.subscribe('MISSION_ACTIVITY_CREATED', (e) => {
+      const newAct = e.payload as MissionActivity;
+      if (!missionId || newAct.mission_id === missionId) {
+        setActivities((prev) => {
+          if (prev.some((a) => a.id === newAct.id)) return prev;
+          return [newAct, ...prev].slice(0, 100);
+        });
+      }
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [userId, missionId, reloadActivities]);
+
+  return {
+    activities,
+    reloadActivities,
   };
 }

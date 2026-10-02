@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { CommandLog, RoutePath, Task, Memory } from '../types';
 import { getLocalStore, setLocalStore } from '../services/supabase';
 import { MemoryService } from '../services/memory';
+import { MissionService } from '../services/mission';
 import { useRealtimeCommands } from '../hooks/useRealtime';
 
 interface CommandsProps {
@@ -14,12 +15,13 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
   const { currentSession, profile, logout, isSupabase, trackEvent } = useAuth();
   const userId = currentSession?.userId || 'guest';
 
-  const { commands: logs, recordCommand } = useRealtimeCommands();
+  const { commands: logs, recordCommand, clearCommands } = useRealtimeCommands();
   const [input, setInput] = useState('');
 
   const quickCommands = [
     '/help',
     '/status',
+    '/missions',
     '/tasks',
     '/memory',
     '/focus 25',
@@ -35,8 +37,7 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
     setInput('');
 
     if (cmd === '/clear') {
-      setLogs([]);
-      setLocalStore(`cmds_${userId}`, []);
+      clearCommands();
       trackEvent('COMMAND_EXECUTED', JSON.stringify({ command: '/clear' }));
       return;
     }
@@ -49,6 +50,7 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
       case cmd === '/help':
         result = `AVAILABLE TACTICAL DIRECTIVES:
 • /status     - System integrity, connection matrix & blade status
+• /missions   - List active missions in Mission Control OS
 • /tasks      - List active tactical directives in Action Queue
 • /memory     - Query indexed memory recall nodes in Blade 03
 • /focus [m]  - Trigger combat focus timer (e.g. /focus 25)
@@ -58,6 +60,17 @@ export const Commands: React.FC<CommandsProps> = ({ onNavigate }) => {
 • /logout     - Terminate active session
 • /clear      - Flush terminal log history`;
         break;
+
+      case cmd === '/missions': {
+        const msns = MissionService.getMissions(userId);
+        const active = msns.filter((m) => m.status === 'ACTIVE');
+        result =
+          active.length === 0
+            ? 'Mission Control: No active missions in queue. Create one with "Plan a mission called..."'
+            : `ACTIVE MISSIONS (${active.length}):\n` +
+              active.map((m) => `• [${m.priority}] ${m.title} — ${m.progress}% complete (Goal: ${m.goal})`).join('\n');
+        break;
+      }
 
       case cmd === '/status': {
         const tasks = getLocalStore<Task[]>(`tasks_${userId}`, []);
