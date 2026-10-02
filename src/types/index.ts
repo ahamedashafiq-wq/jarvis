@@ -19,7 +19,8 @@ export type RoutePath =
   | '/settings'
   | '/profile'
   | '/automation'
-  | '/vision';
+  | '/vision'
+  | '/neural-memory';
 
 export type AIOrbState =
   | 'IDLE'
@@ -107,7 +108,9 @@ export type ToolPermission =
   | 'automation.read'
   | 'automation.write'
   | 'vision.read'
-  | 'vision.write';
+  | 'vision.write'
+  | 'knowledge.read'
+  | 'knowledge.write';
 
 export type RiskLevel = 'SAFE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -521,7 +524,12 @@ export type RealtimeEventType =
   | 'VISION_ANALYSIS_STARTED'
   | 'VISION_ANALYSIS_COMPLETED'
   | 'VISION_ANALYSIS_FAILED'
-  | 'VISION_DELETED';
+  | 'VISION_DELETED'
+  | 'ENTITY_CREATED'
+  | 'ENTITY_UPDATED'
+  | 'ENTITY_DELETED'
+  | 'RELATIONSHIP_CREATED'
+  | 'RELATIONSHIP_DELETED';
 
 export interface RealtimeEvent<T = any> {
   id: string;
@@ -783,5 +791,104 @@ export interface VisionSession {
   image_meta: VisionImageMeta;
   mission_id?: string;
   created_at: number;
+}
+
+// ----------------------------------------------------
+// PHASE 11: JARVIS NEURAL MEMORY & KNOWLEDGE GRAPH
+// ----------------------------------------------------
+
+export type KnowledgeEntityType =
+  | 'PERSON'
+  | 'PROJECT'
+  | 'MISSION'
+  | 'OBJECTIVE'
+  | 'TASK'
+  | 'CONCEPT'
+  | 'DOCUMENT'
+  | 'CONVERSATION'
+  | 'MEMORY'
+  | 'VISION_ANALYSIS'
+  | 'GOAL'
+  | 'DEADLINE'
+  | 'OTHER';
+
+export type KnowledgeRelationshipType =
+  | 'HAS_MISSION'
+  | 'HAS_OBJECTIVE'
+  | 'HAS_TASK'
+  | 'WORKS_ON'
+  | 'ABOUT'
+  | 'RELATED_TO'
+  | 'DISCUSSES'
+  | 'BLOCKED_BY'
+  | 'DEPENDS_ON'
+  | 'PART_OF'
+  | 'BELONGS_TO'
+  | 'REQUIRES'
+  | 'PRODUCES'
+  | 'MENTIONS';
+
+export interface KnowledgeEntity {
+  id: string;
+  user_id: string;
+  entity_type: KnowledgeEntityType;
+  name: string;
+  description?: string;
+  metadata?: Record<string, any>;
+  created_at: number;
+  updated_at?: number;
+}
+
+export interface KnowledgeRelationship {
+  id: string;
+  user_id: string;
+  source_entity_id: string;
+  target_entity_id: string;
+  relationship_type: KnowledgeRelationshipType | string;
+  metadata?: Record<string, any>;
+  created_at: number;
+}
+
+export interface EntityResolutionCandidate {
+  entity: KnowledgeEntity;
+  confidence: number;
+  reason: string;
+  matchScore: number;
+}
+
+export interface EntityResolutionResult {
+  query: string;
+  resolvedEntity?: KnowledgeEntity;
+  candidates: EntityResolutionCandidate[];
+  isAmbiguous: boolean;
+  disambiguationPrompt?: string;
+}
+
+export interface ContextRankingSignal {
+  name: string;
+  score: number;
+  description: string;
+}
+
+export interface BoundedContextEnvelope {
+  primaryEntities: KnowledgeEntity[];
+  connectedEntities: KnowledgeEntity[];
+  relationships: KnowledgeRelationship[];
+  relevantMemories: Memory[];
+  formattedContextString: string;
+  tokenEstimate: number;
+  signalsUsed: ContextRankingSignal[];
+  hopCount: number;
+  truncated: boolean;
+}
+
+export interface ContextEngineQueryOptions {
+  userQuery: string;
+  currentMissionId?: string;
+  activeConversationId?: string;
+  recentEntityIds?: string[];
+  maxTokens?: number;
+  maxHops?: number;
+  maxEntities?: number;
 }
 
