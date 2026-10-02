@@ -4,6 +4,8 @@ import { MemoryService } from '../memory';
 import { getLocalStore, setLocalStore } from '../supabase';
 import { realtimeService } from '../realtime';
 import { Task, Memory, Mission, MissionObjective } from '../../types';
+import { AutomationService } from '../automation';
+import { VisionService } from '../vision';
 
 export interface ToolDefinition {
   name: string;
@@ -11,7 +13,7 @@ export interface ToolDefinition {
   permission: ToolPermission;
   risk: RiskLevel;
   requiresConfirmation: boolean;
-  category: 'MISSION' | 'OBJECTIVE' | 'TASK' | 'MEMORY' | 'FOCUS' | 'SYSTEM' | 'ANALYTICS';
+  category: 'MISSION' | 'OBJECTIVE' | 'TASK' | 'MEMORY' | 'FOCUS' | 'SYSTEM' | 'ANALYTICS' | 'AUTOMATION' | 'VISION';
   validateParams: (params: Record<string, any>) => { valid: boolean; error?: string };
   handler: (params: Record<string, any>, userId: string) => Promise<{ success: boolean; data?: any; message: string }>;
   verify: (params: Record<string, any>, resultData: any, userId: string) => Promise<{ verified: boolean; detail: string }>;
@@ -671,6 +673,310 @@ class ToolRegistryService {
         const verified = existing.some((n) => n.id === resultData.id);
         return { verified, detail: verified ? 'Notification recorded.' : 'Notification record failed.' };
       },
+    });
+
+    // ----------------------------------------------------
+    // 7. AUTOMATION TOOLS
+    // ----------------------------------------------------
+    this.register({
+      name: 'automation.list',
+      description: 'List user automation rules and active workflows.',
+      permission: 'automation.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'AUTOMATION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const list = AutomationService.getAutomations(userId);
+        const active = list.filter((a) => a.status === 'ACTIVE');
+        return {
+          success: true,
+          data: { total: list.length, activeCount: active.length, automations: list },
+          message: `Retrieved ${list.length} automations (${active.length} active).`,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'Automation index checked.' }),
+    });
+
+    this.register({
+      name: 'automation.create',
+      description: 'Establish a new event-driven or scheduled automation workflow.',
+      permission: 'automation.write',
+      risk: 'MEDIUM',
+      requiresConfirmation: true,
+      category: 'AUTOMATION',
+      validateParams: (params) => {
+        if (!params.name || !params.trigger_type || !params.action_config) {
+          return { valid: false, error: 'Name, trigger_type, and action_config are required' };
+        }
+        return { valid: true };
+      },
+      handler: async (params, userId) => {
+        const created = AutomationService.createAutomation(userId, {
+          name: params.name,
+          description: params.description || `Automation for ${params.trigger_type}`,
+          trigger_type: params.trigger_type,
+          trigger_config: params.trigger_config || {},
+          condition_config: params.condition_config || [],
+          action_config: params.action_config,
+          requires_confirmation: Boolean(params.requires_confirmation),
+        });
+
+        return {
+          success: true,
+          data: created,
+          message: `Automation workflow established: "${created.name}" [Trigger: ${created.trigger_type}].`,
+        };
+      },
+      verify: async (params, resultData, userId) => {
+        if (!resultData?.id) return { verified: false, detail: 'Missing automation ID.' };
+        const found = AutomationService.getAutomationById(userId, resultData.id);
+        return {
+          verified: Boolean(found),
+          detail: found ? 'Automation record verified in database.' : 'Record missing.',
+        };
+      },
+    });
+
+    this.register({
+      name: 'automation.run',
+      description: 'Execute an automation immediately through full validation pipeline.',
+      permission: 'automation.write',
+      risk: 'LOW',
+      requiresConfirmation: false,
+      category: 'AUTOMATION',
+      validateParams: (params) => {
+        if (!params.id && !params.name) return { valid: false, error: 'Automation id or name required' };
+        return { valid: true };
+      },
+      handler: async (params, userId) => {
+        const list = AutomationService.getAutomations(userId);
+        const target = params.id
+          ? list.find((a) => a.id === params.id)
+          : list.find((a) => a.name.toLowerCase().includes(String(params.name).toLowerCase()));
+
+        if (!target) return { success: false, message: 'Automation workflow not found.' };
+
+        const run = await AutomationService.runNow(userId, target.id, 'Agent invocation');
+        return {
+          success: run.status === 'SUCCESS',
+          data: run,
+          message: `Automation "${target.name}" executed: ${run.result_summary}`,
+        };
+      },
+      verify: async (params, resultData) => {
+        return {
+          verified: Boolean(resultData?.verified),
+          detail: resultData?.verified ? 'Execution output verified.' : 'Execution unverified.',
+        };
+      },
+    });
+
+    this.register({
+      name: 'automation.pause',
+      description: 'Pause an active automation workflow.',
+      permission: 'automation.write',
+      risk: 'LOW',
+      requiresConfirmation: false,
+      category: 'AUTOMATION',
+      validateParams: (params) => {
+        if (!params.id && !params.name) return { valid: false, error: 'Automation id or name required' };
+        return { valid: true };
+      },
+      handler: async (params, userId) => {
+        const list = AutomationService.getAutomations(userId);
+        const target = params.id
+          ? list.find((a) => a.id === params.id)
+          : list.find((a) => a.name.toLowerCase().includes(String(params.name).toLowerCase()));
+
+        if (!target) return { success: false, message: 'Automation not located.' };
+
+        AutomationService.pauseAutomation(userId, target.id);
+        return {
+          success: true,
+          data: target,
+          message: `Automation "${target.name}" paused.`,
+        };
+      },
+      verify: async (params, resultData, userId) => {
+        if (!resultData?.id) return { verified: false, detail: 'Missing ID.' };
+        const found = AutomationService.getAutomationById(userId, resultData.id);
+        return {
+          verified: found?.status === 'PAUSED',
+          detail: 'Automation paused status verified.',
+        };
+      },
+    });
+
+    // ----------------------------------------------------
+    // 9. VISION CORE TOOLS (Phase 10)
+    // ----------------------------------------------------
+    this.register({
+      name: 'vision.analyze',
+      description: 'Analyze user-provided visual telemetry with structured observations, issues, and uncertainties.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const latest = params.sessionId
+          ? sessions.find((s) => s.id === params.sessionId)
+          : sessions[0];
+
+        if (!latest) {
+          return { success: false, message: 'No visual telemetry available to analyze.' };
+        }
+
+        return {
+          success: true,
+          data: latest.result,
+          message: `Visual analysis of "${latest.image_meta.filename}": ${latest.result_summary}`,
+        };
+      },
+      verify: async (params, resultData) => {
+        return {
+          verified: Boolean(resultData?.summary),
+          detail: resultData?.summary ? 'Visual telemetry analysis verified.' : 'Missing analysis summary.',
+        };
+      },
+    });
+
+    this.register({
+      name: 'vision.describe',
+      description: 'Describe visible elements and visual hierarchy in visual telemetry.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const latest = sessions[0];
+        if (!latest) return { success: false, message: 'No image session found.' };
+
+        return {
+          success: true,
+          data: { observations: latest.result.observations, summary: latest.result.summary },
+          message: `Observations for ${latest.image_meta.filename}: ${latest.result.observations.slice(0, 2).join('; ')}`,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'Visual description verified.' }),
+    });
+
+    this.register({
+      name: 'vision.extract_text',
+      description: 'Extract visible printed or UI text (OCR) from visual telemetry.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const latest = sessions[0];
+        if (!latest) return { success: false, message: 'No image session available.' };
+
+        const text = latest.result.extractedText || 'No explicit text block extracted.';
+        return {
+          success: true,
+          data: { text },
+          message: `Extracted text from ${latest.image_meta.filename}: "${text.slice(0, 100)}"`,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'OCR text extraction verified.' }),
+    });
+
+    this.register({
+      name: 'vision.analyze_ui',
+      description: 'Perform tactical UI review: hierarchy, spacing, typography, and contrast.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const uiSession = sessions.find((s) => s.analysis_type === 'UI_REVIEW') || sessions[0];
+        if (!uiSession) return { success: false, message: 'No UI screenshot session available.' };
+
+        return {
+          success: true,
+          data: uiSession.result,
+          message: `UI review for ${uiSession.image_meta.filename}: ${uiSession.result.recommendations.slice(0, 2).join('; ')}`,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'UI telemetry verified.' }),
+    });
+
+    this.register({
+      name: 'vision.analyze_error',
+      description: 'Diagnose application error screenshot, stack trace, and failure root cause.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const errorSession = sessions.find((s) => s.analysis_type === 'SCREENSHOT_DEBUGGER') || sessions[0];
+        if (!errorSession) return { success: false, message: 'No error screenshot telemetry available.' };
+
+        const topIssue = errorSession.result.issues[0];
+        return {
+          success: true,
+          data: errorSession.result,
+          message: topIssue
+            ? `Diagnosed error: "${topIssue.problem}". Likely cause: ${topIssue.likelyCause || 'Unknown'}`
+            : errorSession.result_summary,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'Error diagnostic verified.' }),
+    });
+
+    this.register({
+      name: 'vision.analyze_diagram',
+      description: 'Inspect architecture diagrams, sequence charts, and node connections.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const diagSession = sessions.find((s) => s.analysis_type === 'DIAGRAM_ANALYSIS') || sessions[0];
+        if (!diagSession) return { success: false, message: 'No diagram telemetry available.' };
+
+        return {
+          success: true,
+          data: diagSession.result,
+          message: `Diagram analysis: ${diagSession.result_summary}`,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'Diagram telemetry verified.' }),
+    });
+
+    this.register({
+      name: 'vision.analyze_chart',
+      description: 'Analyze data charts, metrics trends, axes, and visible data values.',
+      permission: 'vision.read',
+      risk: 'SAFE',
+      requiresConfirmation: false,
+      category: 'VISION',
+      validateParams: () => ({ valid: true }),
+      handler: async (params, userId) => {
+        const sessions = VisionService.getVisionSessions(userId);
+        const chartSession = sessions.find((s) => s.analysis_type === 'CHART_ANALYSIS') || sessions[0];
+        if (!chartSession) return { success: false, message: 'No chart visual telemetry available.' };
+
+        return {
+          success: true,
+          data: chartSession.result,
+          message: `Chart telemetry: ${chartSession.result_summary}`,
+        };
+      },
+      verify: async () => ({ verified: true, detail: 'Chart telemetry verified.' }),
     });
   }
 

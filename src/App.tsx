@@ -24,6 +24,9 @@ import { Settings } from './screens/Settings';
 import { Profile } from './screens/Profile';
 import { Agents } from './screens/Agents';
 import { AgentCouncil } from './screens/AgentCouncil';
+import { AutomationScreen } from './screens/Automation';
+import { VisionScreen } from './screens/Vision';
+import { automationScheduler } from './services/automation/scheduler';
 
 export const App: React.FC = () => {
   const { authState, currentSession, isBootComplete, completeBoot } = useAuth();
@@ -60,6 +63,16 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', handleGlobalVoiceKey);
     return () => window.removeEventListener('keydown', handleGlobalVoiceKey);
   }, [currentPath]);
+
+  // Phase 9: Lifecycle hook for background Automation Scheduler
+  useEffect(() => {
+    if (currentSession?.userId) {
+      automationScheduler.start(currentSession.userId);
+    }
+    return () => {
+      automationScheduler.stop();
+    };
+  }, [currentSession?.userId]);
 
   const navigate = (path: RoutePath) => {
     setCurrentPath(path);
@@ -108,6 +121,10 @@ export const App: React.FC = () => {
         return <Agents onNavigate={navigate} />;
       case '/agents/council':
         return <AgentCouncil onNavigate={navigate} />;
+      case '/automation':
+        return <AutomationScreen onNavigate={navigate} />;
+      case '/vision':
+        return <VisionScreen onNavigate={navigate} />;
       case '/chat':
         return <Chat onNavigate={navigate} />;
       case '/voice':

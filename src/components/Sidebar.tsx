@@ -14,6 +14,8 @@ import {
   Target,
   Cpu,
   Users,
+  Zap,
+  Eye,
 } from 'lucide-react';
 import { RoutePath } from '../types';
 
@@ -28,11 +30,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate }) => 
     { label: 'AI CHAT', path: '/chat', icon: <MessageSquare className="w-4 h-4" />, badge: 'BLADE 01' },
     { label: 'AGENT BRAIN', path: '/agents', icon: <Cpu className="w-4 h-4" />, badge: 'ORCHESTRATOR' },
     { label: 'AGENT COUNCIL', path: '/agents/council', icon: <Users className="w-4 h-4" /> },
+    { label: 'AUTOMATIONS', path: '/automation', icon: <Zap className="w-4 h-4" />, badge: 'PHASE 9' },
     { label: 'MISSIONS', path: '/missions', icon: <Target className="w-4 h-4" />, badge: 'OS CORE' },
     { label: 'ACTION QUEUE', path: '/tasks', icon: <CheckSquare className="w-4 h-4" />, badge: 'BLADE 02' },
     { label: 'MEMORY BANK', path: '/memory', icon: <Database className="w-4 h-4" />, badge: 'BLADE 03' },
     { label: 'FOCUS PROTOCOL', path: '/focus', icon: <Timer className="w-4 h-4" /> },
     { label: 'VOICE HUD', path: '/voice', icon: <Mic className="w-4 h-4" />, badge: 'AUDIO AI' },
+    { label: 'VISION CORE', path: '/vision', icon: <Eye className="w-4 h-4" />, badge: 'PHASE 10' },
     { label: 'TERMINAL', path: '/commands', icon: <Terminal className="w-4 h-4" /> },
     { label: 'ANALYTICS', path: '/analytics', icon: <BarChart3 className="w-4 h-4" /> },
     { label: 'SYSTEM LOGS', path: '/logs', icon: <Activity className="w-4 h-4" /> },

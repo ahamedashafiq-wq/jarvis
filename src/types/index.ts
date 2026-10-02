@@ -17,7 +17,9 @@ export type RoutePath =
   | '/analytics'
   | '/logs'
   | '/settings'
-  | '/profile';
+  | '/profile'
+  | '/automation'
+  | '/vision';
 
 export type AIOrbState =
   | 'IDLE'
@@ -101,7 +103,11 @@ export type ToolPermission =
   | 'focus.write'
   | 'notification.write'
   | 'analytics.read'
-  | 'system.read';
+  | 'system.read'
+  | 'automation.read'
+  | 'automation.write'
+  | 'vision.read'
+  | 'vision.write';
 
 export type RiskLevel = 'SAFE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -211,6 +217,7 @@ export interface Message {
   isStreaming?: boolean;
   intentTag?: string;
   pendingPlan?: AIMissionPlan;
+  pendingAutomationPlan?: AutomationProposal;
 }
 
 export interface Memory {
@@ -384,7 +391,9 @@ export type IntentType =
   | 'ANALYTICS_QUERY'
   | 'SYSTEM_STATUS'
   | 'SETTINGS_UPDATE'
-  | 'NAVIGATION';
+  | 'NAVIGATION'
+  | 'AUTOMATION_CREATE'
+  | 'AUTOMATION_LIST';
 
 export interface DetectedIntent {
   intent: IntentType;
@@ -393,6 +402,7 @@ export interface DetectedIntent {
   rawMessage: string;
   explanation?: string;
   planPreview?: AIMissionPlan;
+  automationProposal?: AutomationProposal;
 }
 
 export interface MemoryCandidate {
@@ -497,7 +507,21 @@ export type RealtimeEventType =
   | 'AGENT_STATUS_UPDATED'
   | 'AGENT_STEP_EXECUTED'
   | 'AGENT_PLAN_CREATED'
-  | 'AGENT_COMPLETED';
+  | 'AGENT_COMPLETED'
+  | 'AUTOMATION_CREATED'
+  | 'AUTOMATION_UPDATED'
+  | 'AUTOMATION_PAUSED'
+  | 'AUTOMATION_RESUMED'
+  | 'AUTOMATION_DELETED'
+  | 'AUTOMATION_STARTED'
+  | 'AUTOMATION_COMPLETED'
+  | 'AUTOMATION_FAILED'
+  | 'AUTOMATION_SKIPPED'
+  | 'VISION_UPLOAD_STARTED'
+  | 'VISION_ANALYSIS_STARTED'
+  | 'VISION_ANALYSIS_COMPLETED'
+  | 'VISION_ANALYSIS_FAILED'
+  | 'VISION_DELETED';
 
 export interface RealtimeEvent<T = any> {
   id: string;
@@ -514,3 +538,250 @@ export interface SystemEvent {
   payload: string;
   created_at: number;
 }
+
+// ----------------------------------------------------
+// PHASE 9: AUTOMATION CORE ENTITIES & ARCHITECTURE
+// ----------------------------------------------------
+
+export type AutomationStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED' | 'ERROR';
+
+export type AutomationTriggerType =
+  | 'SCHEDULE'
+  | 'MISSION_CREATED'
+  | 'MISSION_COMPLETED'
+  | 'MISSION_DEADLINE_APPROACHING'
+  | 'OBJECTIVE_COMPLETED'
+  | 'TASK_CREATED'
+  | 'TASK_COMPLETED'
+  | 'FOCUS_COMPLETED'
+  | 'MANUAL';
+
+export type AutomationScheduleFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'ONCE';
+export type AutomationFrequency = AutomationScheduleFrequency;
+
+export interface AutomationTriggerConfig {
+  frequency?: AutomationScheduleFrequency;
+  time?: string; // "08:00" in 24hr format
+  daysOfWeek?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
+  dayOfMonth?: number; // 1-31
+  timezone?: string; // e.g. "America/New_York", "Asia/Kolkata", "UTC"
+  specificDate?: string;
+  hoursBefore?: number; // for MISSION_DEADLINE_APPROACHING (e.g. 24, 48, 72)
+  [key: string]: any;
+}
+
+export type ConditionOperator =
+  | 'EQUALS'
+  | 'NOT_EQUALS'
+  | 'LESS_THAN'
+  | 'GREATER_THAN'
+  | 'LESS_THAN_OR_EQUAL'
+  | 'GREATER_THAN_OR_EQUAL'
+  | 'IN'
+  | 'CONTAINS';
+
+export interface AutomationCondition {
+  id: string;
+  field: string; // e.g. "mission.status", "mission.progress", "mission.is_incomplete", "task.priority", "task.status", "task.is_incomplete", "deadline_hours_remaining", "focus.duration"
+  operator: ConditionOperator;
+  value: any;
+}
+
+export type AutomationActionType =
+  | 'CREATE_NOTIFICATION'
+  | 'CREATE_TASK'
+  | 'UPDATE_TASK'
+  | 'CREATE_MISSION'
+  | 'GENERATE_BRIEFING'
+  | 'GENERATE_MISSION_SUMMARY'
+  | 'START_FOCUS'
+  | 'CREATE_ACTIVITY_EVENT';
+
+export interface AutomationActionConfig {
+  type: AutomationActionType;
+  parameters: Record<string, any>;
+}
+
+export interface Automation {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  status: AutomationStatus;
+  trigger_type: AutomationTriggerType;
+  trigger_config: AutomationTriggerConfig;
+  condition_config: AutomationCondition[];
+  action_config: AutomationActionConfig;
+  requires_confirmation: boolean;
+  notify_on_run: boolean;
+  last_run_at: number | null;
+  next_run_at: number | null;
+  total_runs: number;
+  success_runs: number;
+  failure_runs: number;
+  consecutive_failures: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export type AutomationRunStatus = 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'CANCELLED';
+
+export interface AutomationRun {
+  id: string;
+  automation_id: string;
+  automation_name: string;
+  user_id: string;
+  status: AutomationRunStatus;
+  triggered_at: number;
+  started_at: number;
+  completed_at?: number;
+  duration_ms?: number;
+  trigger_type: AutomationTriggerType;
+  trigger_detail?: string;
+  condition_evaluation?: {
+    passed: boolean;
+    details: string[];
+  };
+  action_type: AutomationActionType;
+  result_summary: string;
+  verified: boolean;
+  error_message?: string;
+  retry_count?: number;
+}
+
+export interface AutomationTemplate {
+  id: string;
+  title: string;
+  description: string;
+  badge: string;
+  trigger_type: AutomationTriggerType;
+  trigger_config: AutomationTriggerConfig;
+  conditions: AutomationCondition[];
+  action: AutomationActionConfig;
+  requires_confirmation: boolean;
+  risk_level: RiskLevel;
+}
+
+export interface AutomationAnalyticsData {
+  totalAutomations: number;
+  activeAutomations: number;
+  pausedAutomations: number;
+  totalRuns: number;
+  successRuns: number;
+  failedRuns: number;
+  skippedRuns: number;
+  successRate: number;
+  recentRunsCount24h: number;
+  topTriggers: { trigger: string; count: number }[];
+  topActions: { action: string; count: number }[];
+}
+
+export interface AutomationProposal {
+  name: string;
+  description: string;
+  trigger_type: AutomationTriggerType;
+  trigger_config: AutomationTriggerConfig;
+  conditions: AutomationCondition[];
+  action_config: AutomationActionConfig;
+  requires_confirmation: boolean;
+  risk_level: RiskLevel;
+  userTimezone: string;
+}
+
+// ----------------------------------------------------
+// PHASE 10: VISION CORE TYPES & SCHEMAS
+// ----------------------------------------------------
+
+export type VisionMode =
+  | 'GENERAL_ANALYSIS'
+  | 'SCREENSHOT_DEBUGGER'
+  | 'CODE_SCREENSHOT'
+  | 'UI_REVIEW'
+  | 'DIAGRAM_ANALYSIS'
+  | 'CHART_ANALYSIS'
+  | 'DOCUMENT_IMAGE'
+  | 'PROJECT_REVIEW'
+  | 'CUSTOM_QUESTION';
+
+export type VisionCertainty = 'CLEARLY_VISIBLE' | 'LIKELY' | 'UNCLEAR' | 'NOT_VISIBLE';
+
+export interface VisionIssue {
+  problem: string;
+  likelyCause?: string;
+  whatToCheck?: string;
+  suggestedFix?: string;
+  certainty: VisionCertainty;
+  codeSnippet?: string;
+}
+
+export interface VisionDiagramConnection {
+  from: string;
+  to: string;
+  label?: string;
+}
+
+export interface VisionChartData {
+  chartType: string;
+  axes?: string;
+  legend?: string;
+  visibleTrends: string[];
+  approximateValues?: string[];
+}
+
+export interface VisionSecretWarning {
+  type: string;
+  maskedSnippet: string;
+  recommendation: string;
+}
+
+export interface VisionProposedAction {
+  id: string;
+  title: string;
+  description: string;
+  toolName: string;
+  parameters: Record<string, any>;
+  riskLevel: RiskLevel;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'EXECUTED' | 'DISMISSED';
+}
+
+export interface VisionAnalysisResult {
+  summary: string;
+  mode: VisionMode;
+  observations: string[];
+  issues: VisionIssue[];
+  recommendations: string[];
+  uncertainties: string[];
+  extractedText?: string;
+  diagramFlow?: VisionDiagramConnection[];
+  chartData?: VisionChartData;
+  secretsDetected?: VisionSecretWarning[];
+  proposedAction?: VisionProposedAction;
+  projectComparison?: {
+    missionTitle: string;
+    missionProgress: number;
+    tasksRemaining: number;
+    visualDiscrepancies: string[];
+  };
+}
+
+export interface VisionImageMeta {
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  thumbnailDataUrl?: string; // compressed base64 preview
+}
+
+export interface VisionSession {
+  id: string;
+  user_id: string;
+  analysis_type: VisionMode;
+  question?: string;
+  result_summary: string;
+  result: VisionAnalysisResult;
+  image_meta: VisionImageMeta;
+  mission_id?: string;
+  created_at: number;
+}
+

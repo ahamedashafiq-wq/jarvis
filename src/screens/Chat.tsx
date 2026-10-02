@@ -32,7 +32,12 @@ import {
   AlertTriangle,
   Check,
   Target,
+  Paperclip,
+  Eye,
+  X,
 } from 'lucide-react';
+import { VisionService } from '../services/vision';
+import { VisionImageMeta } from '../types';
 import {
   Conversation,
   Message,
@@ -87,6 +92,24 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [orbState, setOrbState] = useState<AIOrbState>('IDLE');
   const [activeIntentTag, setActiveIntentTag] = useState<string | null>(null);
+
+  // Phase 10: Multimodal Image Attachment State
+  const [attachedImageMeta, setAttachedImageMeta] = useState<VisionImageMeta | null>(null);
+  const [attachedImageBase64, setAttachedImageBase64] = useState<string | null>(null);
+  const chatFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAttachImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const res = await VisionService.validateAndPreprocessFile(file);
+    if (!res.valid || !res.meta || !res.base64Data) {
+      showToast('VALIDATION ERROR', res.error || 'Failed to process image.', 'ERROR');
+      return;
+    }
+    setAttachedImageMeta(res.meta);
+    setAttachedImageBase64(res.base64Data);
+    showToast('IMAGE ATTACHED', `Attached "${res.meta.filename}". Enter query or prompt.`, 'TASK');
+  };
 
   // Destructive Confirmation Dialog (e.g. Memory Forget)
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -207,6 +230,72 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     }
 
     setInput('');
+
+    // Phase 10: Multimodal Image + Text Inquiry
+    if (attachedImageMeta && attachedImageBase64) {
+      const activeMeta = attachedImageMeta;
+      const activeBase64 = attachedImageBase64;
+      setAttachedImageMeta(null);
+      setAttachedImageBase64(null);
+
+      const userMsg: Message = {
+        id: 'usr_' + Date.now(),
+        conversation_id: activeConvId,
+        user_id: userId,
+        role: 'user',
+        content: `${prompt}\n[Attached Visual Telemetry: ${activeMeta.filename}]`,
+        created_at: Date.now(),
+      };
+
+      const updatedWithUser = [...messages, userMsg];
+      setMessages(updatedWithUser);
+      setLocalStore(`msgs_${activeConvId}`, updatedWithUser);
+
+      setOrbState('ANALYZING');
+      setIsStreaming(true);
+
+      try {
+        const visionResult = await VisionService.analyzeImage({
+          userId,
+          imageMeta: activeMeta,
+          base64Data: activeBase64,
+          mode: 'GENERAL_ANALYSIS',
+          question: prompt,
+        });
+
+        let replyContent = `Visual Analysis for "${activeMeta.filename}":\n\n${visionResult.summary}`;
+        if (visionResult.observations.length > 0) {
+          replyContent += `\n\nKey Observations:\n${visionResult.observations.map((o) => `• ${o}`).join('\n')}`;
+        }
+        if (visionResult.issues.length > 0) {
+          replyContent += `\n\nIdentified Issues:\n${visionResult.issues.map((i) => `• ${i.problem}${i.suggestedFix ? ` (Fix: ${i.suggestedFix})` : ''}`).join('\n')}`;
+        }
+        if (visionResult.recommendations.length > 0) {
+          replyContent += `\n\nRecommendations:\n${visionResult.recommendations.map((r) => `• ${r}`).join('\n')}`;
+        }
+
+        const assistantMsg: Message = {
+          id: 'ast_' + Date.now(),
+          conversation_id: activeConvId,
+          user_id: userId,
+          role: 'assistant',
+          content: replyContent,
+          created_at: Date.now(),
+          intentTag: 'VISION_CORE: MULTIMODAL',
+        };
+
+        const finalMessages = [...updatedWithUser, assistantMsg];
+        setMessages(finalMessages);
+        setLocalStore(`msgs_${activeConvId}`, finalMessages);
+        speechService.speak(visionResult.summary);
+      } catch (err: any) {
+        showToast('VISION ERROR', err?.message || 'Error processing visual telemetry', 'ERROR');
+      } finally {
+        setIsStreaming(false);
+        setOrbState('IDLE');
+      }
+      return;
+    }
 
     const userMsg: Message = {
       id: 'usr_' + Date.now(),
@@ -750,6 +839,39 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
             ))}
           </div>
 
+          {/* Phase 10: Attached Image Tag */}
+          {attachedImageMeta && (
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-[#121C17] border border-[#00D084]/40 text-xs">
+              {attachedImageMeta.thumbnailDataUrl ? (
+                <img
+                  src={attachedImageMeta.thumbnailDataUrl}
+                  alt={attachedImageMeta.filename}
+                  className="w-8 h-8 rounded object-cover border border-[#16281F]"
+                />
+              ) : (
+                <Eye className="w-4 h-4 text-[#19F59A]" />
+              )}
+              <div className="flex-1 truncate">
+                <span className="font-bold text-[#F5F7F6] text-[11px] block truncate">
+                  {attachedImageMeta.filename}
+                </span>
+                <span className="text-[9px] text-[#8B9992]">
+                  {(attachedImageMeta.sizeBytes / 1024).toFixed(0)} KB • Ready for Multimodal Analysis
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAttachedImageMeta(null);
+                  setAttachedImageBase64(null);
+                }}
+                className="p-1 text-[#8B9992] hover:text-[#FF3B30]"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -757,6 +879,22 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
             }}
             className="flex items-center gap-2"
           >
+            <input
+              ref={chatFileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+              onChange={handleAttachImage}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => chatFileInputRef.current?.click()}
+              className="p-3 rounded-xl bg-[#050706] border border-[#16281F] text-[#8B9992] hover:text-[#19F59A] hover:border-[#19F59A]/40 transition-colors"
+              title="Attach visual telemetry (Screenshot / Diagram / UI)"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+
             <input
               type="text"
               value={input}

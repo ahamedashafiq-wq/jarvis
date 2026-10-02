@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { FocusSession, RoutePath } from '../types';
 import { getLocalStore, setLocalStore } from '../services/supabase';
 import { speechService } from '../services/speech';
+import { realtimeService } from '../services/realtime';
 import { Play, Pause, RotateCcw, Square, Clock, Shield, CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 interface FocusProps {
@@ -106,6 +107,7 @@ export const FocusScreen: React.FC<FocusProps> = ({ onNavigate }) => {
     trackEvent('FOCUS_COMPLETED', JSON.stringify({ duration: targetMinutes }));
     createNotification('FOCUS OBJECTIVE ACHIEVED', `Completed ${targetMinutes} minutes of uninterrupted warrior focus.`, 'SUCCESS');
     speechService.speak(`Mission accomplished. Focus protocol achieved, Commander.`);
+    realtimeService.broadcast('FOCUS_SESSION_STOPPED', newSession);
   };
 
   const totalSecs = targetMinutes * 60;

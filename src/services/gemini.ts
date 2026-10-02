@@ -1,11 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
 import { Memory, Task } from '../types';
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-
-export const isGeminiConfigured = Boolean(apiKey && apiKey !== 'MY_GEMINI_API_KEY');
-
-const ai = isGeminiConfigured ? new GoogleGenAI({ apiKey }) : null;
+export const isGeminiConfigured = true;
 
 export const JARVIS_SYSTEM_INSTRUCTION = `You are JARVIS Zoro Edition, a calm, precise, highly intelligent personal AI assistant and combat intelligence officer.
 Your purpose is to help the user learn, plan, organize, analyze and work with absolute efficiency and discipline.
@@ -97,67 +92,91 @@ export async function* streamGeminiResponse(
   tasks: Task[] = [],
   actionContext?: string
 ): AsyncGenerator<string, void, unknown> {
-  if (!ai || !isGeminiConfigured) {
-    // High-fidelity tactical simulated stream if API key is not configured in environment
-    const canned = generateSimulatedResponse(prompt, tasks, relevantMemories, actionContext);
-    const chunks = canned.split(' ');
-    for (const chunk of chunks) {
-      await new Promise((r) => setTimeout(r, 35));
-      yield chunk + ' ';
-    }
-    return;
-  }
-
-  try {
-    const memoryContext =
-      relevantMemories.length > 0
-        ? `\nRELEVANT USER MEMORY:\n` +
-          relevantMemories.map((m) => `• [${m.category}] ${m.content}`).join('\n')
-        : '';
-
-    const taskContext =
-      tasks.length > 0
-        ? `\n[BLADE 02 ACTION QUEUE]:\n` +
-          tasks.slice(0, 8).map((t) => `• [${t.priority}] ${t.title} (${t.status})`).join('\n')
-        : '';
-
-    const verifiedAction = actionContext
-      ? `\n[APPLICATION ACTION RESULT]:\n${actionContext}\nNote: Report this real execution result to the user. Never claim success unless verified here.`
+  const memoryContext =
+    relevantMemories.length > 0
+      ? `\nRELEVANT USER MEMORY:\n` +
+        relevantMemories.map((m) => `• [${m.category}] ${m.content}`).join('\n')
       : '';
 
-    const systemInstruction = `${JARVIS_SYSTEM_INSTRUCTION}${memoryContext}${taskContext}${verifiedAction}`;
+  const taskContext =
+    tasks.length > 0
+      ? `\n[BLADE 02 ACTION QUEUE]:\n` +
+        tasks.slice(0, 8).map((t) => `• [${t.priority}] ${t.title} (${t.status})`).join('\n')
+      : '';
 
-    // Format chat contents
-    const contents = [
-      ...history.slice(-6).map((msg) => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }],
-      })),
-      {
-        role: 'user',
-        parts: [{ text: prompt }],
-      },
-    ];
+  const verifiedAction = actionContext
+    ? `\n[APPLICATION ACTION RESULT]:\n${actionContext}\nNote: Report this real execution result to the user. Never claim success unless verified here.`
+    : '';
 
-    const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-3.8-flash',
-      contents,
-      config: {
-        systemInstruction,
-      },
+  const systemInstruction = `${JARVIS_SYSTEM_INSTRUCTION}${memoryContext}${taskContext}${verifiedAction}`;
+
+  const contents = [
+    ...history.slice(-6).map((msg) => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }],
+    })),
+    {
+      role: 'user',
+      parts: [{ text: prompt }],
+    },
+  ];
+
+  try {
+    const res = await fetch('/api/gemini/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents, systemInstruction }),
     });
 
-    for await (const chunk of responseStream) {
-      const text = chunk.text;
-      if (text) {
-        yield text;
+    if (!res.ok || !res.body) {
+      throw new Error(`Server returned ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let receivedChunks = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const payload = trimmed.replace(/^data:\s*/, '');
+        if (payload === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(payload);
+          if (parsed.error) {
+            throw new Error(parsed.error);
+          }
+          if (parsed.text) {
+            receivedChunks++;
+            yield parsed.text;
+          }
+        } catch (e: any) {
+          if (e?.message) throw e;
+        }
       }
     }
+
+    if (receivedChunks === 0) {
+      throw new Error('No content returned from server stream');
+    }
   } catch (err: any) {
-    console.error('Gemini Stream Error:', err);
-    // Graceful fallback to verified action message or simulated answer
+    console.warn('Falling back to tactical simulation engine due to stream error:', err);
     const fallback = generateSimulatedResponse(prompt, tasks, relevantMemories, actionContext);
-    yield fallback;
+    const chunks = fallback.split(' ');
+    for (const chunk of chunks) {
+      await new Promise((r) => setTimeout(r, 25));
+      yield chunk + ' ';
+    }
   }
 }
 

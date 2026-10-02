@@ -10,9 +10,11 @@ import {
   CommandLog,
   AIMissionPlan,
   Mission,
+  AutomationProposal,
 } from '../types';
 import { MemoryService, isSecretOrSensitive } from './memory';
 import { MissionService } from './mission';
+import { AutomationService } from './automation';
 import { getLocalStore, setLocalStore } from './supabase';
 import { realtimeService } from './realtime';
 
@@ -46,6 +48,10 @@ export const ALLOWED_NAVIGATION_ROUTES: Record<string, RoutePath> = {
   logs: '/logs',
   settings: '/settings',
   profile: '/profile',
+  automation: '/automation',
+  automations: '/automation',
+  'automation lab': '/automation',
+  workflows: '/automation',
 };
 
 // Allowlisted settings keys
@@ -194,6 +200,7 @@ export function detectIntentHeuristics(text: string): DetectedIntent {
     else if (target.includes('focus')) target = 'focus';
     else if (target.includes('profile')) target = 'profile';
     else if (target.includes('home') || target.includes('dashboard')) target = 'dashboard';
+    else if (target.includes('automation') || target.includes('workflow')) target = 'automation';
 
     if (ALLOWED_NAVIGATION_ROUTES[target]) {
       return {
@@ -204,6 +211,229 @@ export function detectIntentHeuristics(text: string): DetectedIntent {
         explanation: `Explicit navigation request to ${ALLOWED_NAVIGATION_ROUTES[target]}`,
       };
     }
+  }
+
+  // 1a. Automation List intent
+  if (
+    lower === 'show my automations' ||
+    lower === 'show automations' ||
+    lower === 'list automations' ||
+    lower === 'list my automations' ||
+    lower === 'view automations' ||
+    lower === 'what automations are active' ||
+    lower === 'what automations are active?'
+  ) {
+    return {
+      intent: 'AUTOMATION_LIST',
+      confidence: 0.98,
+      parameters: {},
+      rawMessage: raw,
+      explanation: 'Query active automation directives',
+    };
+  }
+
+  // 1a2. Automation Create intents (Phase 9 - Automation Core)
+  const userTz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+
+  // Pattern 1: Daily Briefing
+  // e.g. "Every morning, prepare my daily briefing", "Every morning at 8, give me a briefing", "Every day at 8 AM, give me a briefing about my projects"
+  if (
+    (lower.includes('every morning') || lower.includes('every day')) &&
+    (lower.includes('briefing') || lower.includes('daily report') || lower.includes('summary of my projects'))
+  ) {
+    const timeMatch = lower.match(/(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    let timeStr = '08:00';
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const mins = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+      const meridiem = (timeMatch[3] || '').toLowerCase();
+      if (meridiem === 'pm' && hours < 12) hours += 12;
+      if (meridiem === 'am' && hours === 12) hours = 0;
+      timeStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    }
+
+    const proposal: AutomationProposal = {
+      name: 'Daily Tactical Briefing',
+      description: `Every morning at ${timeStr}, compile active missions, high-priority directives, and urgent deadlines.`,
+      trigger_type: 'SCHEDULE',
+      trigger_config: {
+        frequency: 'DAILY',
+        time: timeStr,
+        timezone: userTz,
+      },
+      conditions: [],
+      action_config: {
+        type: 'GENERATE_BRIEFING',
+        parameters: {},
+      },
+      requires_confirmation: false,
+      risk_level: 'LOW',
+      userTimezone: userTz,
+    };
+
+    return {
+      intent: 'AUTOMATION_CREATE',
+      confidence: 0.99,
+      parameters: { proposal },
+      rawMessage: raw,
+      explanation: 'Automation proposal: Daily Briefing schedule',
+      automationProposal: proposal,
+    };
+  }
+
+  // Pattern 2: Deadline Watch
+  // e.g. "When an important mission deadline is approaching, notify me", "Make sure I don't forget my project deadlines", "When mission deadline is within 24 hours"
+  if (
+    (lower.includes('deadline') && (lower.includes('approaching') || lower.includes('notify') || lower.includes('remind') || lower.includes('within'))) ||
+    lower.includes("don't forget my project deadlines") ||
+    lower.includes('dont forget my project deadlines')
+  ) {
+    const hoursMatch = lower.match(/(\d+)\s*(?:hours|h)/i);
+    const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 24;
+
+    const proposal: AutomationProposal = {
+      name: 'Mission Deadline Watch',
+      description: `Monitors active missions and dispatches high-priority notification when deadline is within ${hours} hours.`,
+      trigger_type: 'MISSION_DEADLINE_APPROACHING',
+      trigger_config: {
+        hoursBefore: hours,
+      },
+      conditions: [
+        {
+          id: 'cond_deadline_incomplete',
+          field: 'mission.is_incomplete',
+          operator: 'EQUALS',
+          value: true,
+        },
+      ],
+      action_config: {
+        type: 'CREATE_NOTIFICATION',
+        parameters: {
+          title: 'TACTICAL DEADLINE ALERT: {{title}}',
+          message: `Mission "{{title}}" target deadline is approaching in less than ${hours} hours. Current progress: {{progress}}%.`,
+          type: 'WARNING',
+        },
+      },
+      requires_confirmation: false,
+      risk_level: 'LOW',
+      userTimezone: userTz,
+    };
+
+    return {
+      intent: 'AUTOMATION_CREATE',
+      confidence: 0.99,
+      parameters: { proposal },
+      rawMessage: raw,
+      explanation: 'Automation proposal: Mission Deadline Watch',
+      automationProposal: proposal,
+    };
+  }
+
+  // Pattern 3: Focus Session Completion
+  // e.g. "When I complete a focus session, update my mission progress"
+  if (
+    (lower.includes('focus session') || lower.includes('focus')) &&
+    (lower.includes('complete') || lower.includes('finished')) &&
+    (lower.includes('update') || lower.includes('mission'))
+  ) {
+    const proposal: AutomationProposal = {
+      name: 'Focus Session Mission Logger',
+      description: 'Automatically records completed combat focus sessions onto the active mission milestone log.',
+      trigger_type: 'FOCUS_COMPLETED',
+      trigger_config: {},
+      conditions: [],
+      action_config: {
+        type: 'CREATE_ACTIVITY_EVENT',
+        parameters: {
+          description: 'Completed {{duration}}-minute combat focus protocol.',
+          type: 'FOCUS_COMPLETED',
+        },
+      },
+      requires_confirmation: false,
+      risk_level: 'LOW',
+      userTimezone: userTz,
+    };
+
+    return {
+      intent: 'AUTOMATION_CREATE',
+      confidence: 0.99,
+      parameters: { proposal },
+      rawMessage: raw,
+      explanation: 'Automation proposal: Focus session completion handler',
+      automationProposal: proposal,
+    };
+  }
+
+  // Pattern 4: Weekly Review
+  // e.g. "Every Sunday, generate a weekly project summary", "Remind me every Sunday to review my AI project"
+  if (
+    (lower.includes('every sunday') || lower.includes('weekly')) &&
+    (lower.includes('summary') || lower.includes('review') || lower.includes('report'))
+  ) {
+    const proposal: AutomationProposal = {
+      name: 'Weekly Retrospective & Summary',
+      description: 'Every Sunday at 18:00, aggregates cleared missions, directives fulfilled, and focus metrics into a summary.',
+      trigger_type: 'SCHEDULE',
+      trigger_config: {
+        frequency: 'WEEKLY',
+        daysOfWeek: [0],
+        time: '18:00',
+        timezone: userTz,
+      },
+      conditions: [],
+      action_config: {
+        type: 'GENERATE_MISSION_SUMMARY',
+        parameters: {},
+      },
+      requires_confirmation: false,
+      risk_level: 'LOW',
+      userTimezone: userTz,
+    };
+
+    return {
+      intent: 'AUTOMATION_CREATE',
+      confidence: 0.99,
+      parameters: { proposal },
+      rawMessage: raw,
+      explanation: 'Automation proposal: Weekly summary schedule',
+      automationProposal: proposal,
+    };
+  }
+
+  // Pattern 5: Generic "Create an automation to..."
+  if (lower.startsWith('create an automation') || lower.startsWith('create automation') || lower.startsWith('automate ')) {
+    const cleanName = raw.replace(/^(create an automation (?:to |for |called )?|create automation (?:to |for |called )?|automate )/i, '').trim();
+    const proposal: AutomationProposal = {
+      name: cleanName ? cleanName.toUpperCase() : 'Custom Directive Workflow',
+      description: `Automated workflow formulated for: "${cleanName || raw}"`,
+      trigger_type: lower.includes('deadline') ? 'MISSION_DEADLINE_APPROACHING' : 'SCHEDULE',
+      trigger_config: {
+        frequency: 'DAILY',
+        time: '08:00',
+        timezone: userTz,
+      },
+      conditions: [],
+      action_config: {
+        type: 'CREATE_NOTIFICATION',
+        parameters: {
+          title: `AUTOMATION: ${cleanName || 'Custom Directive'}`,
+          message: 'Automated directive executed.',
+          type: 'INFO',
+        },
+      },
+      requires_confirmation: true,
+      risk_level: 'LOW',
+      userTimezone: userTz,
+    };
+
+    return {
+      intent: 'AUTOMATION_CREATE',
+      confidence: 0.97,
+      parameters: { proposal },
+      rawMessage: raw,
+      explanation: 'Custom automation workflow proposal synthesized',
+      automationProposal: proposal,
+    };
   }
 
   // 1b. Mission Next Move intent (e.g. "What should I do next?", "What's my next move?", "Next move")
@@ -1035,6 +1265,29 @@ export function validateIntent(
       return { isValid: true, sanitizedParams: { title } };
     }
 
+    case 'AUTOMATION_CREATE': {
+      const proposal = intent.automationProposal || parameters.proposal;
+      if (!proposal) {
+        return {
+          isValid: false,
+          promptUser: 'What type of automation workflow would you like to formulate?',
+        };
+      }
+      return {
+        isValid: true,
+        requiresConfirmation: true,
+        confirmationDetails: {
+          title: 'AUTOMATION PLAN',
+          message: `Do you authorize the activation of "${proposal.name}"?`,
+          detail: `Trigger: ${proposal.trigger_type} | Action: ${proposal.action_config.type}`,
+        },
+        sanitizedParams: { proposal },
+      };
+    }
+
+    case 'AUTOMATION_LIST':
+      return { isValid: true, sanitizedParams: parameters };
+
     case 'MISSION_CREATE': {
       const title = (parameters.title || '').trim();
       return {
@@ -1667,6 +1920,56 @@ export async function executeIntent(
         commandLog = { ...commandLog, status: 'SUCCESS', result: msg, execution_time: execTime };
         recordCommandLog(userId, commandLog);
         return { success: true, message: msg, data: updated, commandLog };
+      }
+
+      case 'AUTOMATION_CREATE': {
+        const proposal: AutomationProposal = params.proposal || intent.automationProposal;
+        const execTime = Math.round(performance.now() - startTime);
+
+        const triggerDesc =
+          proposal.trigger_type === 'SCHEDULE'
+            ? `${proposal.trigger_config.frequency || 'Daily'} at ${proposal.trigger_config.time || '08:00'}`
+            : proposal.trigger_type.replace(/_/g, ' ');
+
+        const actionDesc = proposal.action_config.type.replace(/_/g, ' ');
+
+        const msg = `Target identified. I have formulated an Automation Plan:\n\n• Name: ${proposal.name}\n• Trigger: ${triggerDesc}\n• Action: ${actionDesc}\n• Timezone: ${proposal.userTimezone || 'User timezone'}\n• Risk Level: ${proposal.risk_level}\n\nStanding by for your authorization. Click APPROVE PLAN to activate this workflow in the Automation Lab.`;
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: msg,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+
+        return {
+          success: true,
+          message: msg,
+          data: { proposal },
+          commandLog,
+        };
+      }
+
+      case 'AUTOMATION_LIST': {
+        const list = AutomationService.getAutomations(userId);
+        const active = list.filter((a) => a.status === 'ACTIVE');
+        const execTime = Math.round(performance.now() - startTime);
+
+        const report =
+          list.length === 0
+            ? 'No automation workflows currently deployed in Automation Lab. Say "Every morning at 8 give me a briefing" to deploy one.'
+            : `Automation Lab status: ${active.length} active of ${list.length} total workflows:\n` +
+              list.map((a) => `• [${a.status}] ${a.name} (${a.trigger_type} → ${a.action_config.type})`).join('\n');
+
+        commandLog = {
+          ...commandLog,
+          status: 'SUCCESS',
+          result: report,
+          execution_time: execTime,
+        };
+        recordCommandLog(userId, commandLog);
+        return { success: true, message: report, data: list, commandLog };
       }
 
       case 'NAVIGATION': {

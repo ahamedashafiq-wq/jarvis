@@ -24,6 +24,7 @@ import {
   Flame,
   Target,
   Zap,
+  Eye,
 } from 'lucide-react';
 import { Task, Memory, RoutePath, AIOrbState } from '../types';
 import {
@@ -203,6 +204,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           className="px-4 py-2 rounded-xl bg-[#19F59A] text-[#050706] font-bold text-xs hover:bg-[#00D084] transition-all shrink-0 flex items-center gap-1.5 shadow-[0_0_15px_rgba(25,245,154,0.25)]"
         >
           <span>ENTER MISSION CONTROL</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* PHASE 9: AUTOMATION CORE HERO WIDGET */}
+      <div className="p-4 rounded-2xl bg-[#0A100D] border border-[#16281F] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#00D084]/15 border border-[#00D084]/40 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-[#19F59A]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-[#19F59A] tracking-wider uppercase">
+                AUTOMATION CORE • TRIGGER → ACTION
+              </span>
+              <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#00D084]/20 text-[#19F59A] font-mono font-bold">
+                PHASE 9
+              </span>
+            </div>
+            <div className="text-xs text-[#8B9992]">
+              Controlled recurring and event-driven workflows with safety guardrails & verification.
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigate('/automation')}
+          className="px-3.5 py-1.5 rounded-lg bg-[#121C17] border border-[#00D084]/40 text-[#19F59A] font-bold text-xs hover:bg-[#00D084]/15 transition-all shrink-0 flex items-center gap-1.5"
+        >
+          <span>MANAGE AUTOMATIONS</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* PHASE 10: VISION CORE SENSORY WIDGET */}
+      <div className="p-4 rounded-2xl bg-[#0A100D] border border-[#16281F] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#38E1FF]/15 border border-[#38E1FF]/40 flex items-center justify-center shrink-0">
+            <Eye className="w-4 h-4 text-[#38E1FF]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-[#38E1FF] tracking-wider uppercase">
+                VISION CORE • SENSORY MATRIX
+              </span>
+              <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#38E1FF]/20 text-[#38E1FF] font-mono font-bold">
+                PHASE 10
+              </span>
+            </div>
+            <div className="text-xs text-[#8B9992]">
+              See. Understand. Act. Ingest screenshots, code, architecture diagrams, and error diagnostics.
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigate('/vision')}
+          className="px-3.5 py-1.5 rounded-lg bg-[#121C17] border border-[#38E1FF]/40 text-[#38E1FF] font-bold text-xs hover:bg-[#38E1FF]/15 transition-all shrink-0 flex items-center gap-1.5"
+        >
+          <span>OPEN VISION CORE</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>

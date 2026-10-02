@@ -1,41 +1,36 @@
-import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { AgentPlan, AgentRequest, AgentStep } from '../../types';
 import { toolRegistry } from './toolRegistry';
 import { AgentGuardian } from './guardian';
 import { AgentContextSnapshot } from './context';
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const isGeminiConfigured = Boolean(apiKey && apiKey !== 'MY_GEMINI_API_KEY');
-const ai = isGeminiConfigured ? new GoogleGenAI({ apiKey }) : null;
-
-const PLAN_SCHEMA: Schema = {
-  type: Type.OBJECT,
+const PLAN_SCHEMA = {
+  type: 'OBJECT',
   properties: {
-    objective: { type: Type.STRING },
-    requires_approval: { type: Type.BOOLEAN },
+    objective: { type: 'STRING' },
+    requires_approval: { type: 'BOOLEAN' },
     steps: {
-      type: Type.ARRAY,
+      type: 'ARRAY',
       items: {
-        type: Type.OBJECT,
+        type: 'OBJECT',
         properties: {
-          tool: { type: Type.STRING },
-          reason: { type: Type.STRING },
+          tool: { type: 'STRING' },
+          reason: { type: 'STRING' },
           parameters: {
-            type: Type.OBJECT,
+            type: 'OBJECT',
             properties: {
-              title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              priority: { type: Type.STRING },
-              category: { type: Type.STRING },
-              deadline: { type: Type.STRING },
-              missionId: { type: Type.STRING },
-              mission_id: { type: Type.STRING },
-              objective_id: { type: Type.STRING },
-              content: { type: Type.STRING },
-              query: { type: Type.STRING },
-              duration: { type: Type.NUMBER },
-              status: { type: Type.STRING },
-              id: { type: Type.STRING },
+              title: { type: 'STRING' },
+              description: { type: 'STRING' },
+              priority: { type: 'STRING' },
+              category: { type: 'STRING' },
+              deadline: { type: 'STRING' },
+              missionId: { type: 'STRING' },
+              mission_id: { type: 'STRING' },
+              objective_id: { type: 'STRING' },
+              content: { type: 'STRING' },
+              query: { type: 'STRING' },
+              duration: { type: 'NUMBER' },
+              status: { type: 'STRING' },
+              id: { type: 'STRING' },
             },
           },
         },
@@ -77,21 +72,20 @@ export class AgentPlanner {
       return this.finalizePlan(heuristicPlan, request.user_id);
     }
 
-    // 2. If Gemini is available, call structured Gemini Planner
-    if (ai && isGeminiConfigured) {
-      try {
-        const availableTools = toolRegistry
-          .getAllTools()
-          .map((t) => `- ${t.name}: ${t.description} [Risk: ${t.risk}]`)
-          .join('\n');
+    // 2. Call server-side structured Gemini Planner
+    try {
+      const availableTools = toolRegistry
+        .getAllTools()
+        .map((t) => `- ${t.name}: ${t.description} [Risk: ${t.risk}]`)
+        .join('\n');
 
-        const contextInfo = JSON.stringify({
-          activeMissions: context.missions,
-          pendingTasks: context.tasks,
-          memories: context.memories,
-        });
+      const contextInfo = JSON.stringify({
+        activeMissions: context.missions,
+        pendingTasks: context.tasks,
+        memories: context.memories,
+      });
 
-        const prompt = `You are the PLANNER specialist for JARVIS Zoro Edition AI Agent Core.
+      const prompt = `You are the PLANNER specialist for JARVIS Zoro Edition AI Agent Core.
 Break this user request into a safe, sequential execution plan consisting ONLY of allowlisted tools.
 
 ALLOWLISTED TOOLS:
@@ -109,16 +103,21 @@ RULES:
 3. Any plan that creates or updates tasks/missions requires user confirmation.
 4. Keep the plan focused and concise (1-5 steps).`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: prompt,
+      const response = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
           config: {
             responseMimeType: 'application/json',
             responseSchema: PLAN_SCHEMA,
           },
-        });
+        }),
+      });
 
-        const parsed = JSON.parse(response.text || '{}');
+      if (response.ok) {
+        const data = await response.json();
+        const parsed = JSON.parse(data.text || '{}');
         if (parsed.objective && Array.isArray(parsed.steps) && parsed.steps.length > 0) {
           const validatedSteps: AgentStep[] = [];
           let stepNumber = 1;
@@ -151,9 +150,9 @@ RULES:
             return this.finalizePlan(plan, request.user_id);
           }
         }
-      } catch (e) {
-        console.warn('Gemini planner fallback to default plan', e);
       }
+    } catch (e) {
+      console.warn('Server Gemini planner fallback to default plan', e);
     }
 
     // 3. Fallback default analytical plan
@@ -206,7 +205,6 @@ RULES:
     const text = request.message.toLowerCase();
 
     // Archetype 1: Multi-step mission creation with objectives
-    // e.g. "Create a mission for my AI assistant and add backend, frontend, testing and deployment objectives"
     if (
       (text.includes('create a mission') || text.includes('new mission')) &&
       (text.includes('objective') || text.includes('backend') || text.includes('frontend'))
@@ -258,7 +256,6 @@ RULES:
     }
 
     // Archetype 2: Prepare / Organize Project
-    // e.g. "Prepare my AI project for the next development session" or "Organize my AI project"
     if (
       text.includes('prepare') ||
       text.includes('organize') ||

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { UserSession, Profile, NotificationItem, SystemEvent } from '../types';
 import { supabase, isSupabaseConfigured, getLocalStore, setLocalStore } from '../services/supabase';
 import { realtimeService } from '../services/realtime';
+import { automationScheduler } from '../services/automation/scheduler';
 
 export type AuthState = 'AUTHENTICATING' | 'AUTHENTICATED' | 'UNAUTHENTICATED' | 'ERROR';
 
@@ -39,6 +40,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     restoreSession();
   }, []);
+
+  useEffect(() => {
+    if (currentSession?.userId) {
+      automationScheduler.start(currentSession.userId);
+    } else {
+      automationScheduler.stop();
+    }
+    return () => {
+      automationScheduler.stop();
+    };
+  }, [currentSession?.userId]);
 
   const restoreSession = async () => {
     setAuthState('AUTHENTICATING');
